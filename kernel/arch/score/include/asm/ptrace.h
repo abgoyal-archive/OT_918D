@@ -1,0 +1,127 @@
+/* Copyright Statement:
+ *
+ * This software/firmware and related documentation ("MediaTek Software") are
+ * protected under relevant copyright laws. The information contained herein
+ * is confidential and proprietary to MediaTek Inc. and/or its licensors.
+ * Without the prior written permission of MediaTek inc. and/or its licensors,
+ * any reproduction, modification, use or disclosure of MediaTek Software,
+ * and information contained herein, in whole or in part, shall be strictly prohibited.
+ *
+ * MediaTek Inc. (C) 2010. All rights reserved.
+ *
+ * BY OPENING THIS FILE, RECEIVER HEREBY UNEQUIVOCALLY ACKNOWLEDGES AND AGREES
+ * THAT THE SOFTWARE/FIRMWARE AND ITS DOCUMENTATIONS ("MEDIATEK SOFTWARE")
+ * RECEIVED FROM MEDIATEK AND/OR ITS REPRESENTATIVES ARE PROVIDED TO RECEIVER ON
+ * AN "AS-IS" BASIS ONLY. MEDIATEK EXPRESSLY DISCLAIMS ANY AND ALL WARRANTIES,
+ * EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE IMPLIED WARRANTIES OF
+ * MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE OR NONINFRINGEMENT.
+ * NEITHER DOES MEDIATEK PROVIDE ANY WARRANTY WHATSOEVER WITH RESPECT TO THE
+ * SOFTWARE OF ANY THIRD PARTY WHICH MAY BE USED BY, INCORPORATED IN, OR
+ * SUPPLIED WITH THE MEDIATEK SOFTWARE, AND RECEIVER AGREES TO LOOK ONLY TO SUCH
+ * THIRD PARTY FOR ANY WARRANTY CLAIM RELATING THERETO. RECEIVER EXPRESSLY ACKNOWLEDGES
+ * THAT IT IS RECEIVER'S SOLE RESPONSIBILITY TO OBTAIN FROM ANY THIRD PARTY ALL PROPER LICENSES
+ * CONTAINED IN MEDIATEK SOFTWARE. MEDIATEK SHALL ALSO NOT BE RESPONSIBLE FOR ANY MEDIATEK
+ * SOFTWARE RELEASES MADE TO RECEIVER'S SPECIFICATION OR TO CONFORM TO A PARTICULAR
+ * STANDARD OR OPEN FORUM. RECEIVER'S SOLE AND EXCLUSIVE REMEDY AND MEDIATEK'S ENTIRE AND
+ * CUMULATIVE LIABILITY WITH RESPECT TO THE MEDIATEK SOFTWARE RELEASED HEREUNDER WILL BE,
+ * AT MEDIATEK'S OPTION, TO REVISE OR REPLACE THE MEDIATEK SOFTWARE AT ISSUE,
+ * OR REFUND ANY SOFTWARE LICENSE FEES OR SERVICE CHARGE PAID BY RECEIVER TO
+ * MEDIATEK FOR SUCH MEDIATEK SOFTWARE AT ISSUE.
+ */
+
+#ifndef _ASM_SCORE_PTRACE_H
+#define _ASM_SCORE_PTRACE_H
+
+#define PTRACE_GETREGS		12
+#define PTRACE_SETREGS		13
+
+#define PC		32
+#define CONDITION	33
+#define ECR		34
+#define EMA		35
+#define CEH		36
+#define CEL		37
+#define COUNTER		38
+#define LDCR		39
+#define STCR		40
+#define PSR		41
+
+#define SINGLESTEP16_INSN	0x7006
+#define SINGLESTEP32_INSN	0x840C8000
+#define BREAKPOINT16_INSN	0x7002		/* work on SPG300 */
+#define BREAKPOINT32_INSN	0x84048000	/* work on SPG300 */
+
+/* Define instruction mask */
+#define INSN32_MASK	0x80008000
+
+#define J32	0x88008000	/* 1_00010_0000000000_1_000000000000000 */
+#define J32M	0xFC008000	/* 1_11111_0000000000_1_000000000000000 */
+
+#define B32	0x90008000	/* 1_00100_0000000000_1_000000000000000 */
+#define B32M	0xFC008000
+#define BL32	0x90008001	/* 1_00100_0000000000_1_000000000000001 */
+#define BL32M	B32
+#define BR32	0x80008008	/* 1_00000_0000000000_1_00000000_000100_0 */
+#define BR32M	0xFFE0807E
+#define BRL32	0x80008009	/* 1_00000_0000000000_1_00000000_000100_1 */
+#define BRL32M	BR32M
+
+#define B32_SET	(J32 | B32 | BL32 | BR32 | BRL32)
+
+#define J16	0x3000		/* 0_011_....... */
+#define J16M	0xF000
+#define B16	0x4000		/* 0_100_....... */
+#define B16M	0xF000
+#define BR16	0x0004		/* 0_000.......0100 */
+#define BR16M	0xF00F
+#define B16_SET (J16 | B16 | BR16)
+
+
+/*
+ * This struct defines the way the registers are stored on the stack during a
+ * system call/exception. As usual the registers k0/k1 aren't being saved.
+ */
+struct pt_regs {
+	unsigned long pad0[6];	/* stack arguments */
+	unsigned long orig_r4;
+	unsigned long orig_r7;
+	long is_syscall;
+
+	unsigned long regs[32];
+
+	unsigned long cel;
+	unsigned long ceh;
+
+	unsigned long sr0;	/* cnt */
+	unsigned long sr1;	/* lcr */
+	unsigned long sr2;	/* scr */
+
+	unsigned long cp0_epc;
+	unsigned long cp0_ema;
+	unsigned long cp0_psr;
+	unsigned long cp0_ecr;
+	unsigned long cp0_condition;
+};
+
+#ifdef __KERNEL__
+
+struct task_struct;
+
+/*
+ * Does the process account for user or for system time?
+ */
+#define user_mode(regs) 	((regs->cp0_psr & 8) == 8)
+
+#define instruction_pointer(regs)	((unsigned long)(regs)->cp0_epc)
+#define profile_pc(regs)		instruction_pointer(regs)
+
+extern void do_syscall_trace(struct pt_regs *regs, int entryexit);
+extern int read_tsk_long(struct task_struct *, unsigned long, unsigned long *);
+extern int read_tsk_short(struct task_struct *, unsigned long,
+			 unsigned short *);
+
+#define arch_has_single_step()	(1)
+
+#endif /* __KERNEL__ */
+
+#endif /* _ASM_SCORE_PTRACE_H */

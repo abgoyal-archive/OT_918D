@@ -1,0 +1,290 @@
+/* Copyright Statement:
+ *
+ * This software/firmware and related documentation ("MediaTek Software") are
+ * protected under relevant copyright laws. The information contained herein
+ * is confidential and proprietary to MediaTek Inc. and/or its licensors.
+ * Without the prior written permission of MediaTek inc. and/or its licensors,
+ * any reproduction, modification, use or disclosure of MediaTek Software,
+ * and information contained herein, in whole or in part, shall be strictly prohibited.
+ *
+ * MediaTek Inc. (C) 2010. All rights reserved.
+ *
+ * BY OPENING THIS FILE, RECEIVER HEREBY UNEQUIVOCALLY ACKNOWLEDGES AND AGREES
+ * THAT THE SOFTWARE/FIRMWARE AND ITS DOCUMENTATIONS ("MEDIATEK SOFTWARE")
+ * RECEIVED FROM MEDIATEK AND/OR ITS REPRESENTATIVES ARE PROVIDED TO RECEIVER ON
+ * AN "AS-IS" BASIS ONLY. MEDIATEK EXPRESSLY DISCLAIMS ANY AND ALL WARRANTIES,
+ * EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE IMPLIED WARRANTIES OF
+ * MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE OR NONINFRINGEMENT.
+ * NEITHER DOES MEDIATEK PROVIDE ANY WARRANTY WHATSOEVER WITH RESPECT TO THE
+ * SOFTWARE OF ANY THIRD PARTY WHICH MAY BE USED BY, INCORPORATED IN, OR
+ * SUPPLIED WITH THE MEDIATEK SOFTWARE, AND RECEIVER AGREES TO LOOK ONLY TO SUCH
+ * THIRD PARTY FOR ANY WARRANTY CLAIM RELATING THERETO. RECEIVER EXPRESSLY ACKNOWLEDGES
+ * THAT IT IS RECEIVER'S SOLE RESPONSIBILITY TO OBTAIN FROM ANY THIRD PARTY ALL PROPER LICENSES
+ * CONTAINED IN MEDIATEK SOFTWARE. MEDIATEK SHALL ALSO NOT BE RESPONSIBLE FOR ANY MEDIATEK
+ * SOFTWARE RELEASES MADE TO RECEIVER'S SPECIFICATION OR TO CONFORM TO A PARTICULAR
+ * STANDARD OR OPEN FORUM. RECEIVER'S SOLE AND EXCLUSIVE REMEDY AND MEDIATEK'S ENTIRE AND
+ * CUMULATIVE LIABILITY WITH RESPECT TO THE MEDIATEK SOFTWARE RELEASED HEREUNDER WILL BE,
+ * AT MEDIATEK'S OPTION, TO REVISE OR REPLACE THE MEDIATEK SOFTWARE AT ISSUE,
+ * OR REFUND ANY SOFTWARE LICENSE FEES OR SERVICE CHARGE PAID BY RECEIVER TO
+ * MEDIATEK FOR SUCH MEDIATEK SOFTWARE AT ISSUE.
+ *
+ * The following software/firmware and/or related documentation ("MediaTek Software")
+ * have been modified by MediaTek Inc. All revisions are subject to any receiver's
+ * applicable license agreements with MediaTek Inc.
+ */
+
+/* ld script to make ARM Linux kernel
+ * taken from the i386 version by Russell King
+ * Written by Martin Mares <mj@atrey.karlin.mff.cuni.cz>
+ */
+
+#include <asm-generic/vmlinux.lds.h>
+#include <asm/thread_info.h>
+#include <asm/memory.h>
+#include <asm/page.h>
+	
+OUTPUT_ARCH(arm)
+ENTRY(stext)
+
+#ifndef __ARMEB__
+jiffies = jiffies_64;
+#else
+jiffies = jiffies_64 + 4;
+#endif
+
+SECTIONS
+{
+#ifdef CONFIG_XIP_KERNEL
+	. = XIP_VIRT_ADDR(CONFIG_XIP_PHYS_ADDR);
+#else
+	. = PAGE_OFFSET + TEXT_OFFSET;
+#endif
+
+	.init : {			/* Init code and data		*/
+		_stext = .;
+		_sinittext = .;
+			HEAD_TEXT
+			INIT_TEXT
+		_einittext = .;
+		__proc_info_begin = .;
+			*(.proc.info.init)
+		__proc_info_end = .;
+		__arch_info_begin = .;
+			*(.arch.info.init)
+		__arch_info_end = .;
+		__tagtable_begin = .;
+			*(.taglist.init)
+		__tagtable_end = .;
+
+		INIT_SETUP(16)
+
+		INIT_CALLS
+		CON_INITCALL
+		SECURITY_INITCALL
+		INIT_RAM_FS
+
+#ifndef CONFIG_XIP_KERNEL
+		__init_begin = _stext;
+		INIT_DATA
+#endif
+	}
+
+	PERCPU(PAGE_SIZE)
+
+#ifndef CONFIG_XIP_KERNEL
+	. = ALIGN(PAGE_SIZE);
+	__init_end = .;
+#endif
+
+	/*
+	 * unwind exit sections must be discarded before the rest of the
+	 * unwind sections get included.
+	 */
+	/DISCARD/ : {
+		*(.ARM.exidx.exit.text)
+		*(.ARM.extab.exit.text)
+#ifndef CONFIG_HOTPLUG_CPU
+		*(.ARM.exidx.cpuexit.text)
+		*(.ARM.extab.cpuexit.text)
+#endif
+#ifndef CONFIG_HOTPLUG
+		*(.ARM.exidx.devexit.text)
+		*(.ARM.extab.devexit.text)
+#endif
+#ifndef CONFIG_MMU
+		*(.fixup)
+		*(__ex_table)
+#endif
+	}
+
+	.text : {			/* Real text segment		*/
+		_text = .;		/* Text and read-only data	*/
+			__exception_text_start = .;
+			*(.exception.text)
+			__exception_text_end = .;
+			TEXT_TEXT
+			SCHED_TEXT
+			LOCK_TEXT
+			KPROBES_TEXT
+#ifdef CONFIG_FUNCTION_DURATION_TRACER
+			IRQENTRY_TEXT
+#endif
+#ifdef CONFIG_MMU
+			*(.fixup)
+#endif
+			*(.gnu.warning)
+			*(.rodata)
+			*(.rodata.*)
+			*(.glue_7)
+			*(.glue_7t)
+		*(.got)			/* Global offset table		*/
+	}
+
+	RO_DATA(PAGE_SIZE)
+
+	_etext = .;			/* End of text and rodata section */
+
+#ifdef CONFIG_ARM_UNWIND
+	/*
+	 * Stack unwinding tables
+	 */
+	. = ALIGN(8);
+	.ARM.unwind_idx : {
+		__start_unwind_idx = .;
+		*(.ARM.exidx*)
+		__stop_unwind_idx = .;
+	}
+	.ARM.unwind_tab : {
+		__start_unwind_tab = .;
+		*(.ARM.extab*)
+		__stop_unwind_tab = .;
+	}
+#endif
+
+#ifdef CONFIG_XIP_KERNEL
+	__data_loc = ALIGN(4);		/* location in binary */
+	. = PAGE_OFFSET + TEXT_OFFSET;
+#else
+	. = ALIGN(THREAD_SIZE);
+	__data_loc = .;
+#endif
+
+	.data : AT(__data_loc) {
+		_data = .;		/* address in memory */
+		_sdata = .;
+
+		/*
+		 * first, the init task union, aligned
+		 * to an 8192 byte boundary.
+		 */
+		INIT_TASK_DATA(THREAD_SIZE)
+
+#ifdef CONFIG_XIP_KERNEL
+		. = ALIGN(PAGE_SIZE);
+		__init_begin = .;
+		INIT_DATA
+		. = ALIGN(PAGE_SIZE);
+		__init_end = .;
+#endif
+
+		NOSAVE_DATA
+		CACHELINE_ALIGNED_DATA(32)
+
+		/*
+		 * The exception fixup table (might need resorting at runtime)
+		 */
+		. = ALIGN(32);
+		__start___ex_table = .;
+#ifdef CONFIG_MMU
+		*(__ex_table)
+#endif
+		__stop___ex_table = .;
+
+		/*
+		 * and the usual data section
+		 */
+		DATA_DATA
+		CONSTRUCTORS
+
+		_edata = .;
+	}
+	_edata_loc = __data_loc + SIZEOF(.data);
+
+#ifdef CONFIG_HAVE_TCM
+        /*
+	 * We align everything to a page boundary so we can
+	 * free it after init has commenced and TCM contents have
+	 * been copied to its destination.
+	 */
+	.tcm_start : {
+		. = ALIGN(PAGE_SIZE);
+		__tcm_start = .;
+		__itcm_start = .;
+	}
+
+	/*
+	 * Link these to the ITCM RAM
+	 * Put VMA to the TCM address and LMA to the common RAM
+	 * and we'll upload the contents from RAM to TCM and free
+	 * the used RAM after that.
+	 */
+	.text_itcm ITCM_OFFSET : AT(__itcm_start)
+	{
+		__sitcm_text = .;
+		*(.tcm.text)
+		*(.tcm.rodata)
+		. = ALIGN(4);
+		__eitcm_text = .;
+	}
+
+	/*
+	 * Reset the dot pointer, this is needed to create the
+	 * relative __dtcm_start below (to be used as extern in code).
+	 */
+	. = ADDR(.tcm_start) + SIZEOF(.tcm_start) + SIZEOF(.text_itcm);
+	__itcm_end = .;
+	ASSERT((__itcm_end - __itcm_start) < ITCM_SIZE, "Error!! codes are too big to fit in ITCM")
+
+	.dtcm_start : {
+		__dtcm_start = .;
+	}
+
+	/* TODO: add remainder of ITCM as well, that can be used for data! */
+	.data_dtcm DTCM_OFFSET : AT(__dtcm_start)
+	{
+		. = ALIGN(4);
+		__sdtcm_data = .;
+		*(.tcm.data)
+		. = ALIGN(4);
+		__edtcm_data = .;
+	}
+
+	/* Reset the dot pointer or the linker gets confused */
+	. = ADDR(.dtcm_start) + SIZEOF(.data_dtcm);
+	__dtcm_end = .;
+	ASSERT((__dtcm_end - __dtcm_start) < DTCM_SIZE, "Error!! data is too big to fit in DTCM")
+
+	/* End marker for freeing TCM copy in linked object */
+	.tcm_end : AT(ADDR(.dtcm_start) + SIZEOF(.data_dtcm)){
+		. = ALIGN(PAGE_SIZE);
+		__tcm_end = .;
+	}
+#endif
+
+	BSS_SECTION(0, 0, 0)
+	_end = .;
+
+	STABS_DEBUG
+	.comment 0 : { *(.comment) }
+
+	/* Default discards */
+	DISCARDS
+}
+
+/*
+ * These must never be empty
+ * If you have to comment these two assert statements out, your
+ * binutils is too old (for other reasons as well)
+ */
+ASSERT((__proc_info_end - __proc_info_begin), "missing CPU support")
+ASSERT((__arch_info_end - __arch_info_begin), "no machine record defined")

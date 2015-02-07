@@ -1,0 +1,5 @@
+kernel/drivers/input/input-core.ko
+kernel/drivers/input/mousedev.ko
+kernel/drivers/input/evdev.ko
+kernel/drivers/input/keyboard/hid_keyboard.ko
+kernel/drivers/input/misc/uinput.ko

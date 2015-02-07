@@ -1,0 +1,151 @@
+# Copyright Statement:
+#
+# This software/firmware and related documentation ("MediaTek Software") are
+# protected under relevant copyright laws. The information contained herein
+# is confidential and proprietary to MediaTek Inc. and/or its licensors.
+# Without the prior written permission of MediaTek inc. and/or its licensors,
+# any reproduction, modification, use or disclosure of MediaTek Software,
+# and information contained herein, in whole or in part, shall be strictly prohibited.
+#
+# MediaTek Inc. (C) 2010. All rights reserved.
+#
+# BY OPENING THIS FILE, RECEIVER HEREBY UNEQUIVOCALLY ACKNOWLEDGES AND AGREES
+# THAT THE SOFTWARE/FIRMWARE AND ITS DOCUMENTATIONS ("MEDIATEK SOFTWARE")
+# RECEIVED FROM MEDIATEK AND/OR ITS REPRESENTATIVES ARE PROVIDED TO RECEIVER ON
+# AN "AS-IS" BASIS ONLY. MEDIATEK EXPRESSLY DISCLAIMS ANY AND ALL WARRANTIES,
+# EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE IMPLIED WARRANTIES OF
+# MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE OR NONINFRINGEMENT.
+# NEITHER DOES MEDIATEK PROVIDE ANY WARRANTY WHATSOEVER WITH RESPECT TO THE
+# SOFTWARE OF ANY THIRD PARTY WHICH MAY BE USED BY, INCORPORATED IN, OR
+# SUPPLIED WITH THE MEDIATEK SOFTWARE, AND RECEIVER AGREES TO LOOK ONLY TO SUCH
+# THIRD PARTY FOR ANY WARRANTY CLAIM RELATING THERETO. RECEIVER EXPRESSLY ACKNOWLEDGES
+# THAT IT IS RECEIVER'S SOLE RESPONSIBILITY TO OBTAIN FROM ANY THIRD PARTY ALL PROPER LICENSES
+# CONTAINED IN MEDIATEK SOFTWARE. MEDIATEK SHALL ALSO NOT BE RESPONSIBLE FOR ANY MEDIATEK
+# SOFTWARE RELEASES MADE TO RECEIVER'S SPECIFICATION OR TO CONFORM TO A PARTICULAR
+# STANDARD OR OPEN FORUM. RECEIVER'S SOLE AND EXCLUSIVE REMEDY AND MEDIATEK'S ENTIRE AND
+# CUMULATIVE LIABILITY WITH RESPECT TO THE MEDIATEK SOFTWARE RELEASED HEREUNDER WILL BE,
+# AT MEDIATEK'S OPTION, TO REVISE OR REPLACE THE MEDIATEK SOFTWARE AT ISSUE,
+# OR REFUND ANY SOFTWARE LICENSE FEES OR SERVICE CHARGE PAID BY RECEIVER TO
+# MEDIATEK FOR SUCH MEDIATEK SOFTWARE AT ISSUE.
+
+
+menuconfig OMAP2_DSS
+        tristate "OMAP2/3 Display Subsystem support (EXPERIMENTAL)"
+        depends on ARCH_OMAP2 || ARCH_OMAP3
+        help
+          OMAP2/3 Display Subsystem support.
+
+if OMAP2_DSS
+
+config OMAP2_VRAM_SIZE
+	int "VRAM size (MB)"
+	range 0 32
+	default 0
+	help
+	  The amount of SDRAM to reserve at boot time for video RAM use.
+	  This VRAM will be used by omapfb and other drivers that need
+	  large continuous RAM area for video use.
+
+	  You can also set this with "vram=<bytes>" kernel argument, or
+	  in the board file.
+
+config OMAP2_DSS_DEBUG_SUPPORT
+        bool "Debug support"
+	default y
+	help
+	  This enables debug messages. You need to enable printing
+	  with 'debug' module parameter.
+
+config OMAP2_DSS_COLLECT_IRQ_STATS
+	bool "Collect DSS IRQ statistics"
+	depends on OMAP2_DSS_DEBUG_SUPPORT
+	default n
+	help
+	  Collect DSS IRQ statistics, printable via debugfs.
+
+	  The statistics can be found from
+	  <debugfs>/omapdss/dispc_irq for DISPC interrupts, and
+	  <debugfs>/omapdss/dsi_irq for DSI interrupts.
+
+config OMAP2_DSS_DPI
+	bool "DPI support"
+	default y
+	help
+	  DPI Interface. This is the Parallel Display Interface.
+
+config OMAP2_DSS_RFBI
+	bool "RFBI support"
+        default n
+	help
+	  MIPI DBI support (RFBI, Remote Framebuffer Interface, in Texas
+	  Instrument's terminology).
+
+	  DBI is a bus between the host processor and a peripheral,
+	  such as a display or a framebuffer chip.
+
+	  See http://www.mipi.org/ for DBI spesifications.
+
+config OMAP2_DSS_VENC
+	bool "VENC support"
+        default y
+	help
+	  OMAP Video Encoder support for S-Video and composite TV-out.
+
+config OMAP2_DSS_SDI
+	bool "SDI support"
+	depends on ARCH_OMAP3
+        default n
+	help
+	  SDI (Serial Display Interface) support.
+
+	  SDI is a high speed one-way display serial bus between the host
+	  processor and a display.
+
+config OMAP2_DSS_DSI
+	bool "DSI support"
+	depends on ARCH_OMAP3
+        default n
+	help
+	  MIPI DSI (Display Serial Interface) support.
+
+	  DSI is a high speed half-duplex serial interface between the host
+	  processor and a peripheral, such as a display or a framebuffer chip.
+
+	  See http://www.mipi.org/ for DSI spesifications.
+
+config OMAP2_DSS_USE_DSI_PLL
+	bool "Use DSI PLL for PCLK (EXPERIMENTAL)"
+	default n
+	depends on OMAP2_DSS_DSI
+	help
+	  Use DSI PLL to generate pixel clock.  Currently only for DPI output.
+	  DSI PLL can be used to generate higher and more precise pixel clocks.
+
+config OMAP2_DSS_FAKE_VSYNC
+	bool "Fake VSYNC irq from manual update displays"
+	default n
+	help
+	  If this is selected, DSI will generate a fake DISPC VSYNC interrupt
+	  when DSI has sent a frame. This is only needed with DSI or RFBI
+	  displays using manual mode, and you want VSYNC to, for example,
+	  time animation.
+
+config OMAP2_DSS_MIN_FCK_PER_PCK
+	int "Minimum FCK/PCK ratio (for scaling)"
+	range 0 32
+	default 0
+	help
+	  This can be used to adjust the minimum FCK/PCK ratio.
+
+	  With this you can make sure that DISPC FCK is at least
+	  n x PCK. Video plane scaling requires higher FCK than
+	  normally.
+
+	  If this is set to 0, there's no extra constraint on the
+	  DISPC FCK. However, the FCK will at minimum be
+	  2xPCK (if active matrix) or 3xPCK (if passive matrix).
+
+	  Max FCK is 173MHz, so this doesn't work if your PCK
+	  is very high.
+
+endif

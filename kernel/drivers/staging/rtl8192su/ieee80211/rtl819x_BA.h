@@ -1,0 +1,100 @@
+/* Copyright Statement:
+ *
+ * This software/firmware and related documentation ("MediaTek Software") are
+ * protected under relevant copyright laws. The information contained herein
+ * is confidential and proprietary to MediaTek Inc. and/or its licensors.
+ * Without the prior written permission of MediaTek inc. and/or its licensors,
+ * any reproduction, modification, use or disclosure of MediaTek Software,
+ * and information contained herein, in whole or in part, shall be strictly prohibited.
+ *
+ * MediaTek Inc. (C) 2010. All rights reserved.
+ *
+ * BY OPENING THIS FILE, RECEIVER HEREBY UNEQUIVOCALLY ACKNOWLEDGES AND AGREES
+ * THAT THE SOFTWARE/FIRMWARE AND ITS DOCUMENTATIONS ("MEDIATEK SOFTWARE")
+ * RECEIVED FROM MEDIATEK AND/OR ITS REPRESENTATIVES ARE PROVIDED TO RECEIVER ON
+ * AN "AS-IS" BASIS ONLY. MEDIATEK EXPRESSLY DISCLAIMS ANY AND ALL WARRANTIES,
+ * EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE IMPLIED WARRANTIES OF
+ * MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE OR NONINFRINGEMENT.
+ * NEITHER DOES MEDIATEK PROVIDE ANY WARRANTY WHATSOEVER WITH RESPECT TO THE
+ * SOFTWARE OF ANY THIRD PARTY WHICH MAY BE USED BY, INCORPORATED IN, OR
+ * SUPPLIED WITH THE MEDIATEK SOFTWARE, AND RECEIVER AGREES TO LOOK ONLY TO SUCH
+ * THIRD PARTY FOR ANY WARRANTY CLAIM RELATING THERETO. RECEIVER EXPRESSLY ACKNOWLEDGES
+ * THAT IT IS RECEIVER'S SOLE RESPONSIBILITY TO OBTAIN FROM ANY THIRD PARTY ALL PROPER LICENSES
+ * CONTAINED IN MEDIATEK SOFTWARE. MEDIATEK SHALL ALSO NOT BE RESPONSIBLE FOR ANY MEDIATEK
+ * SOFTWARE RELEASES MADE TO RECEIVER'S SPECIFICATION OR TO CONFORM TO A PARTICULAR
+ * STANDARD OR OPEN FORUM. RECEIVER'S SOLE AND EXCLUSIVE REMEDY AND MEDIATEK'S ENTIRE AND
+ * CUMULATIVE LIABILITY WITH RESPECT TO THE MEDIATEK SOFTWARE RELEASED HEREUNDER WILL BE,
+ * AT MEDIATEK'S OPTION, TO REVISE OR REPLACE THE MEDIATEK SOFTWARE AT ISSUE,
+ * OR REFUND ANY SOFTWARE LICENSE FEES OR SERVICE CHARGE PAID BY RECEIVER TO
+ * MEDIATEK FOR SUCH MEDIATEK SOFTWARE AT ISSUE.
+ */
+
+#ifndef _BATYPE_H_
+#define _BATYPE_H_
+
+#define 	TOTAL_TXBA_NUM	16
+#define	TOTAL_RXBA_NUM	16
+
+#define	BA_SETUP_TIMEOUT	200
+#define	BA_INACT_TIMEOUT	60000
+
+#define	BA_POLICY_DELAYED		0
+#define	BA_POLICY_IMMEDIATE	1
+
+#define	ADDBA_STATUS_SUCCESS			0
+#define	ADDBA_STATUS_REFUSED		37
+#define	ADDBA_STATUS_INVALID_PARAM	38
+
+#define	DELBA_REASON_QSTA_LEAVING	36
+#define	DELBA_REASON_END_BA			37
+#define	DELBA_REASON_UNKNOWN_BA	38
+#define	DELBA_REASON_TIMEOUT			39
+/*  whether need define BA Action frames here?
+struct ieee80211_ADDBA_Req{
+	struct ieee80211_header_data header;
+	u8	category;
+	u8
+} __attribute__ ((packed));
+*/
+//Is this need?I put here just to make it easier to define structure BA_RECORD //WB
+typedef union _SEQUENCE_CONTROL{
+	u16 ShortData;
+	struct
+	{
+		u16	FragNum:4;
+		u16	SeqNum:12;
+	}field;
+}SEQUENCE_CONTROL, *PSEQUENCE_CONTROL;
+
+typedef union _BA_PARAM_SET {
+	u8 charData[2];
+	u16 shortData;
+	struct {
+		u16 AMSDU_Support:1;
+		u16 BAPolicy:1;
+		u16 TID:4;
+		u16 BufferSize:10;
+	} field;
+} BA_PARAM_SET, *PBA_PARAM_SET;
+
+typedef union _DELBA_PARAM_SET {
+	u8 charData[2];
+	u16 shortData;
+	struct {
+		u16 Reserved:11;
+		u16 Initiator:1;
+		u16 TID:4;
+	} field;
+} DELBA_PARAM_SET, *PDELBA_PARAM_SET;
+
+typedef struct _BA_RECORD {
+	struct timer_list		Timer;
+	u8				bValid;
+	u8				DialogToken;
+	BA_PARAM_SET		BaParamSet;
+	u16				BaTimeoutValue;
+	SEQUENCE_CONTROL	BaStartSeqCtrl;
+} BA_RECORD, *PBA_RECORD;
+
+#endif //end _BATYPE_H_
+

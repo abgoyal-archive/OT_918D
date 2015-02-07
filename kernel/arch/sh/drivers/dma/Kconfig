@@ -1,0 +1,123 @@
+# Copyright Statement:
+#
+# This software/firmware and related documentation ("MediaTek Software") are
+# protected under relevant copyright laws. The information contained herein
+# is confidential and proprietary to MediaTek Inc. and/or its licensors.
+# Without the prior written permission of MediaTek inc. and/or its licensors,
+# any reproduction, modification, use or disclosure of MediaTek Software,
+# and information contained herein, in whole or in part, shall be strictly prohibited.
+#
+# MediaTek Inc. (C) 2010. All rights reserved.
+#
+# BY OPENING THIS FILE, RECEIVER HEREBY UNEQUIVOCALLY ACKNOWLEDGES AND AGREES
+# THAT THE SOFTWARE/FIRMWARE AND ITS DOCUMENTATIONS ("MEDIATEK SOFTWARE")
+# RECEIVED FROM MEDIATEK AND/OR ITS REPRESENTATIVES ARE PROVIDED TO RECEIVER ON
+# AN "AS-IS" BASIS ONLY. MEDIATEK EXPRESSLY DISCLAIMS ANY AND ALL WARRANTIES,
+# EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE IMPLIED WARRANTIES OF
+# MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE OR NONINFRINGEMENT.
+# NEITHER DOES MEDIATEK PROVIDE ANY WARRANTY WHATSOEVER WITH RESPECT TO THE
+# SOFTWARE OF ANY THIRD PARTY WHICH MAY BE USED BY, INCORPORATED IN, OR
+# SUPPLIED WITH THE MEDIATEK SOFTWARE, AND RECEIVER AGREES TO LOOK ONLY TO SUCH
+# THIRD PARTY FOR ANY WARRANTY CLAIM RELATING THERETO. RECEIVER EXPRESSLY ACKNOWLEDGES
+# THAT IT IS RECEIVER'S SOLE RESPONSIBILITY TO OBTAIN FROM ANY THIRD PARTY ALL PROPER LICENSES
+# CONTAINED IN MEDIATEK SOFTWARE. MEDIATEK SHALL ALSO NOT BE RESPONSIBLE FOR ANY MEDIATEK
+# SOFTWARE RELEASES MADE TO RECEIVER'S SPECIFICATION OR TO CONFORM TO A PARTICULAR
+# STANDARD OR OPEN FORUM. RECEIVER'S SOLE AND EXCLUSIVE REMEDY AND MEDIATEK'S ENTIRE AND
+# CUMULATIVE LIABILITY WITH RESPECT TO THE MEDIATEK SOFTWARE RELEASED HEREUNDER WILL BE,
+# AT MEDIATEK'S OPTION, TO REVISE OR REPLACE THE MEDIATEK SOFTWARE AT ISSUE,
+# OR REFUND ANY SOFTWARE LICENSE FEES OR SERVICE CHARGE PAID BY RECEIVER TO
+# MEDIATEK FOR SUCH MEDIATEK SOFTWARE AT ISSUE.
+
+
+menu "DMA support"
+
+
+config SH_DMA
+	bool "SuperH on-chip DMA controller (DMAC) support"
+	depends on CPU_SH3 || CPU_SH4
+	default n
+
+config SH_DMA_IRQ_MULTI
+	bool
+	depends on SH_DMA
+	default y if CPU_SUBTYPE_SH7750  || CPU_SUBTYPE_SH7751  || \
+		     CPU_SUBTYPE_SH7750S || CPU_SUBTYPE_SH7750R || \
+		     CPU_SUBTYPE_SH7751R || CPU_SUBTYPE_SH7091  || \
+		     CPU_SUBTYPE_SH7763  || CPU_SUBTYPE_SH7764  || \
+		     CPU_SUBTYPE_SH7780  || CPU_SUBTYPE_SH7785  || \
+		     CPU_SUBTYPE_SH7760
+
+config SH_DMA_API
+	depends on SH_DMA
+	bool "SuperH DMA API support"
+	default n
+	help
+	  SH_DMA_API always enabled DMA API of used SuperH.
+	  If you want to use DMA ENGINE, you must not enable this.
+	  Please enable DMA_ENGINE and SH_DMAE.
+
+config NR_ONCHIP_DMA_CHANNELS
+	int
+	depends on SH_DMA
+	default "4" if CPU_SUBTYPE_SH7750  || CPU_SUBTYPE_SH7751  || \
+		       CPU_SUBTYPE_SH7750S || CPU_SUBTYPE_SH7091
+	default "8" if CPU_SUBTYPE_SH7750R || CPU_SUBTYPE_SH7751R || \
+		       CPU_SUBTYPE_SH7760
+	default "12" if CPU_SUBTYPE_SH7723 || CPU_SUBTYPE_SH7780  || \
+			CPU_SUBTYPE_SH7785 || CPU_SUBTYPE_SH7724
+	default "6"
+	help
+	  This allows you to specify the number of channels that the on-chip
+	  DMAC supports. This will be 4 for SH7750/SH7751/Sh7750S/SH7091 and 8 for the
+	  SH7750R/SH7751R/SH7760, 12 for the SH7723/SH7780/SH7785/SH7724, default is 6.
+
+config NR_DMA_CHANNELS_BOOL
+	depends on SH_DMA
+	bool "Override default number of maximum DMA channels"
+	help
+	  This allows you to forcibly update the maximum number of supported
+	  DMA channels for a given board. If this is unset, this will default
+	  to the number of channels that the on-chip DMAC has.
+
+config NR_DMA_CHANNELS
+	int "Maximum number of DMA channels"
+	depends on SH_DMA && NR_DMA_CHANNELS_BOOL
+	default NR_ONCHIP_DMA_CHANNELS
+	help
+	  This allows you to specify the maximum number of DMA channels to
+	  support. Setting this to a higher value allows for cascading DMACs
+	  with additional channels.
+
+config SH_DMABRG
+	bool "SH7760 DMABRG support"
+	depends on CPU_SUBTYPE_SH7760
+	help
+	  The DMABRG does data transfers from main memory to Audio/USB units
+	  of the SH7760.
+	  Say Y if you want to use Audio/USB DMA on your SH7760 board.
+
+config PVR2_DMA
+	tristate "PowerVR 2 DMAC support"
+	depends on SH_DREAMCAST && SH_DMA
+	help
+	  Selecting this will enable support for the PVR2 DMA controller.
+	  As this chains off of the on-chip DMAC, that must also be
+	  enabled by default.
+
+	  This is primarily used by the pvr2fb framebuffer driver for
+	  certain optimizations, but is not necessary for functionality.
+
+	  If in doubt, say N.
+
+config G2_DMA
+	tristate "G2 Bus DMA support"
+	depends on SH_DREAMCAST
+	select SH_DMA_API
+	help
+	  This enables support for the DMA controller for the Dreamcast's
+	  G2 bus. Drivers that want this will generally enable this on
+	  their own.
+
+	  If in doubt, say N.
+
+endmenu

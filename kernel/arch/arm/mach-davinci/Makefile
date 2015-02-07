@@ -1,0 +1,68 @@
+# Copyright Statement:
+#
+# This software/firmware and related documentation ("MediaTek Software") are
+# protected under relevant copyright laws. The information contained herein
+# is confidential and proprietary to MediaTek Inc. and/or its licensors.
+# Without the prior written permission of MediaTek inc. and/or its licensors,
+# any reproduction, modification, use or disclosure of MediaTek Software,
+# and information contained herein, in whole or in part, shall be strictly prohibited.
+#
+# MediaTek Inc. (C) 2010. All rights reserved.
+#
+# BY OPENING THIS FILE, RECEIVER HEREBY UNEQUIVOCALLY ACKNOWLEDGES AND AGREES
+# THAT THE SOFTWARE/FIRMWARE AND ITS DOCUMENTATIONS ("MEDIATEK SOFTWARE")
+# RECEIVED FROM MEDIATEK AND/OR ITS REPRESENTATIVES ARE PROVIDED TO RECEIVER ON
+# AN "AS-IS" BASIS ONLY. MEDIATEK EXPRESSLY DISCLAIMS ANY AND ALL WARRANTIES,
+# EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE IMPLIED WARRANTIES OF
+# MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE OR NONINFRINGEMENT.
+# NEITHER DOES MEDIATEK PROVIDE ANY WARRANTY WHATSOEVER WITH RESPECT TO THE
+# SOFTWARE OF ANY THIRD PARTY WHICH MAY BE USED BY, INCORPORATED IN, OR
+# SUPPLIED WITH THE MEDIATEK SOFTWARE, AND RECEIVER AGREES TO LOOK ONLY TO SUCH
+# THIRD PARTY FOR ANY WARRANTY CLAIM RELATING THERETO. RECEIVER EXPRESSLY ACKNOWLEDGES
+# THAT IT IS RECEIVER'S SOLE RESPONSIBILITY TO OBTAIN FROM ANY THIRD PARTY ALL PROPER LICENSES
+# CONTAINED IN MEDIATEK SOFTWARE. MEDIATEK SHALL ALSO NOT BE RESPONSIBLE FOR ANY MEDIATEK
+# SOFTWARE RELEASES MADE TO RECEIVER'S SPECIFICATION OR TO CONFORM TO A PARTICULAR
+# STANDARD OR OPEN FORUM. RECEIVER'S SOLE AND EXCLUSIVE REMEDY AND MEDIATEK'S ENTIRE AND
+# CUMULATIVE LIABILITY WITH RESPECT TO THE MEDIATEK SOFTWARE RELEASED HEREUNDER WILL BE,
+# AT MEDIATEK'S OPTION, TO REVISE OR REPLACE THE MEDIATEK SOFTWARE AT ISSUE,
+# OR REFUND ANY SOFTWARE LICENSE FEES OR SERVICE CHARGE PAID BY RECEIVER TO
+# MEDIATEK FOR SUCH MEDIATEK SOFTWARE AT ISSUE.
+
+
+#
+# Makefile for the linux kernel.
+#
+#
+
+# Common objects
+obj-y 			:= time.o clock.o serial.o io.o psc.o \
+			   gpio.o dma.o usb.o common.o sram.o
+
+obj-$(CONFIG_DAVINCI_MUX)		+= mux.o
+
+# Chip specific
+obj-$(CONFIG_ARCH_DAVINCI_DM644x)       += dm644x.o devices.o
+obj-$(CONFIG_ARCH_DAVINCI_DM355)        += dm355.o devices.o
+obj-$(CONFIG_ARCH_DAVINCI_DM646x)       += dm646x.o devices.o
+obj-$(CONFIG_ARCH_DAVINCI_DM365)	+= dm365.o devices.o
+obj-$(CONFIG_ARCH_DAVINCI_DA830)        += da830.o devices-da8xx.o
+obj-$(CONFIG_ARCH_DAVINCI_DA850)        += da850.o devices-da8xx.o
+
+obj-$(CONFIG_AINTC)			+= irq.o
+obj-$(CONFIG_CP_INTC)			+= cp_intc.o
+
+# Board specific
+obj-$(CONFIG_MACH_DAVINCI_EVM)  	+= board-dm644x-evm.o
+obj-$(CONFIG_MACH_SFFSDR)		+= board-sffsdr.o
+obj-$(CONFIG_MACH_NEUROS_OSD2)		+= board-neuros-osd2.o
+obj-$(CONFIG_MACH_DAVINCI_DM355_EVM)	+= board-dm355-evm.o
+obj-$(CONFIG_MACH_DM355_LEOPARD)	+= board-dm355-leopard.o
+obj-$(CONFIG_MACH_DAVINCI_DM6467_EVM)	+= board-dm646x-evm.o cdce949.o
+obj-$(CONFIG_MACH_DAVINCI_DM365_EVM)	+= board-dm365-evm.o
+obj-$(CONFIG_MACH_DAVINCI_DA830_EVM)	+= board-da830-evm.o
+obj-$(CONFIG_MACH_DAVINCI_DA850_EVM)	+= board-da850-evm.o
+
+# Power Management
+obj-$(CONFIG_CPU_FREQ)			+= cpufreq.o
+obj-$(CONFIG_CPU_IDLE)			+= cpuidle.o
+obj-$(CONFIG_SUSPEND)			+= pm.o sleep.o

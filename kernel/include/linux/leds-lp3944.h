@@ -1,0 +1,81 @@
+/* Copyright Statement:
+ *
+ * This software/firmware and related documentation ("MediaTek Software") are
+ * protected under relevant copyright laws. The information contained herein
+ * is confidential and proprietary to MediaTek Inc. and/or its licensors.
+ * Without the prior written permission of MediaTek inc. and/or its licensors,
+ * any reproduction, modification, use or disclosure of MediaTek Software,
+ * and information contained herein, in whole or in part, shall be strictly prohibited.
+ *
+ * MediaTek Inc. (C) 2010. All rights reserved.
+ *
+ * BY OPENING THIS FILE, RECEIVER HEREBY UNEQUIVOCALLY ACKNOWLEDGES AND AGREES
+ * THAT THE SOFTWARE/FIRMWARE AND ITS DOCUMENTATIONS ("MEDIATEK SOFTWARE")
+ * RECEIVED FROM MEDIATEK AND/OR ITS REPRESENTATIVES ARE PROVIDED TO RECEIVER ON
+ * AN "AS-IS" BASIS ONLY. MEDIATEK EXPRESSLY DISCLAIMS ANY AND ALL WARRANTIES,
+ * EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE IMPLIED WARRANTIES OF
+ * MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE OR NONINFRINGEMENT.
+ * NEITHER DOES MEDIATEK PROVIDE ANY WARRANTY WHATSOEVER WITH RESPECT TO THE
+ * SOFTWARE OF ANY THIRD PARTY WHICH MAY BE USED BY, INCORPORATED IN, OR
+ * SUPPLIED WITH THE MEDIATEK SOFTWARE, AND RECEIVER AGREES TO LOOK ONLY TO SUCH
+ * THIRD PARTY FOR ANY WARRANTY CLAIM RELATING THERETO. RECEIVER EXPRESSLY ACKNOWLEDGES
+ * THAT IT IS RECEIVER'S SOLE RESPONSIBILITY TO OBTAIN FROM ANY THIRD PARTY ALL PROPER LICENSES
+ * CONTAINED IN MEDIATEK SOFTWARE. MEDIATEK SHALL ALSO NOT BE RESPONSIBLE FOR ANY MEDIATEK
+ * SOFTWARE RELEASES MADE TO RECEIVER'S SPECIFICATION OR TO CONFORM TO A PARTICULAR
+ * STANDARD OR OPEN FORUM. RECEIVER'S SOLE AND EXCLUSIVE REMEDY AND MEDIATEK'S ENTIRE AND
+ * CUMULATIVE LIABILITY WITH RESPECT TO THE MEDIATEK SOFTWARE RELEASED HEREUNDER WILL BE,
+ * AT MEDIATEK'S OPTION, TO REVISE OR REPLACE THE MEDIATEK SOFTWARE AT ISSUE,
+ * OR REFUND ANY SOFTWARE LICENSE FEES OR SERVICE CHARGE PAID BY RECEIVER TO
+ * MEDIATEK FOR SUCH MEDIATEK SOFTWARE AT ISSUE.
+ */
+
+/*
+ * leds-lp3944.h - platform data structure for lp3944 led controller
+ *
+ * Copyright (C) 2009 Antonio Ospite <ospite@studenti.unina.it>
+ *
+ * This program is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License version 2 as
+ * published by the Free Software Foundation.
+ *
+ */
+
+#ifndef __LINUX_LEDS_LP3944_H
+#define __LINUX_LEDS_LP3944_H
+
+#define LP3944_LED0 0
+#define LP3944_LED1 1
+#define LP3944_LED2 2
+#define LP3944_LED3 3
+#define LP3944_LED4 4
+#define LP3944_LED5 5
+#define LP3944_LED6 6
+#define LP3944_LED7 7
+#define LP3944_LEDS_MAX 8
+
+#define LP3944_LED_STATUS_MASK	0x03
+enum lp3944_status {
+	LP3944_LED_STATUS_OFF  = 0x0,
+	LP3944_LED_STATUS_ON   = 0x1,
+	LP3944_LED_STATUS_DIM0 = 0x2,
+	LP3944_LED_STATUS_DIM1 = 0x3
+};
+
+enum lp3944_type {
+	LP3944_LED_TYPE_NONE,
+	LP3944_LED_TYPE_LED,
+	LP3944_LED_TYPE_LED_INVERTED,
+};
+
+struct lp3944_led {
+	char *name;
+	enum lp3944_type type;
+	enum lp3944_status status;
+};
+
+struct lp3944_platform_data {
+	struct lp3944_led leds[LP3944_LEDS_MAX];
+	u8 leds_size;
+};
+
+#endif /* __LINUX_LEDS_LP3944_H */

@@ -1,0 +1,140 @@
+# Copyright Statement:
+#
+# This software/firmware and related documentation ("MediaTek Software") are
+# protected under relevant copyright laws. The information contained herein
+# is confidential and proprietary to MediaTek Inc. and/or its licensors.
+# Without the prior written permission of MediaTek inc. and/or its licensors,
+# any reproduction, modification, use or disclosure of MediaTek Software,
+# and information contained herein, in whole or in part, shall be strictly prohibited.
+#
+# MediaTek Inc. (C) 2010. All rights reserved.
+#
+# BY OPENING THIS FILE, RECEIVER HEREBY UNEQUIVOCALLY ACKNOWLEDGES AND AGREES
+# THAT THE SOFTWARE/FIRMWARE AND ITS DOCUMENTATIONS ("MEDIATEK SOFTWARE")
+# RECEIVED FROM MEDIATEK AND/OR ITS REPRESENTATIVES ARE PROVIDED TO RECEIVER ON
+# AN "AS-IS" BASIS ONLY. MEDIATEK EXPRESSLY DISCLAIMS ANY AND ALL WARRANTIES,
+# EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE IMPLIED WARRANTIES OF
+# MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE OR NONINFRINGEMENT.
+# NEITHER DOES MEDIATEK PROVIDE ANY WARRANTY WHATSOEVER WITH RESPECT TO THE
+# SOFTWARE OF ANY THIRD PARTY WHICH MAY BE USED BY, INCORPORATED IN, OR
+# SUPPLIED WITH THE MEDIATEK SOFTWARE, AND RECEIVER AGREES TO LOOK ONLY TO SUCH
+# THIRD PARTY FOR ANY WARRANTY CLAIM RELATING THERETO. RECEIVER EXPRESSLY ACKNOWLEDGES
+# THAT IT IS RECEIVER'S SOLE RESPONSIBILITY TO OBTAIN FROM ANY THIRD PARTY ALL PROPER LICENSES
+# CONTAINED IN MEDIATEK SOFTWARE. MEDIATEK SHALL ALSO NOT BE RESPONSIBLE FOR ANY MEDIATEK
+# SOFTWARE RELEASES MADE TO RECEIVER'S SPECIFICATION OR TO CONFORM TO A PARTICULAR
+# STANDARD OR OPEN FORUM. RECEIVER'S SOLE AND EXCLUSIVE REMEDY AND MEDIATEK'S ENTIRE AND
+# CUMULATIVE LIABILITY WITH RESPECT TO THE MEDIATEK SOFTWARE RELEASED HEREUNDER WILL BE,
+# AT MEDIATEK'S OPTION, TO REVISE OR REPLACE THE MEDIATEK SOFTWARE AT ISSUE,
+# OR REFUND ANY SOFTWARE LICENSE FEES OR SERVICE CHARGE PAID BY RECEIVER TO
+# MEDIATEK FOR SUCH MEDIATEK SOFTWARE AT ISSUE.
+
+
+config VIDEO_GO7007
+	tristate "WIS GO7007 MPEG encoder support"
+	depends on VIDEO_DEV && PCI && I2C && INPUT
+	depends on SND
+	select VIDEOBUF_DMA_SG
+	select VIDEO_IR
+	select VIDEO_TUNER
+	select VIDEO_TVEEPROM
+	select SND_PCM
+	select CRC32
+	default N
+	---help---
+	  This is a video4linux driver for the WIS GO7007 MPEG
+	  encoder chip.
+
+	  To compile this driver as a module, choose M here: the
+	  module will be called go7007
+
+config VIDEO_GO7007_USB
+	tristate "WIS GO7007 USB support"
+	depends on VIDEO_GO7007 && USB
+	default N
+	---help---
+	  This is a video4linux driver for the WIS GO7007 MPEG
+	  encoder chip over USB.
+
+	  To compile this driver as a module, choose M here: the
+	  module will be called go7007-usb
+
+config VIDEO_GO7007_USB_S2250_BOARD
+	tristate "Sensoray 2250/2251 support"
+	depends on VIDEO_GO7007_USB && DVB_USB
+	default N
+	---help---
+	  This is a video4linux driver for the Sensoray 2250/2251 device.
+
+	  To compile this driver as a module, choose M here: the
+	  module will be called s2250
+
+config VIDEO_GO7007_OV7640
+	tristate "OV7640 subdev support"
+	depends on VIDEO_GO7007
+	default N
+	---help---
+	  This is a video4linux driver for the OV7640 sub-device.
+
+	  To compile this driver as a module, choose M here: the
+	  module will be called wis-ov7640
+
+config VIDEO_GO7007_SAA7113
+	tristate "SAA7113 subdev support"
+	depends on VIDEO_GO7007
+	default N
+	---help---
+	  This is a video4linux driver for the SAA7113 sub-device.
+
+	  To compile this driver as a module, choose M here: the
+	  module will be called wis-saa7113
+
+config VIDEO_GO7007_SAA7115
+	tristate "SAA7115 subdev support"
+	depends on VIDEO_GO7007
+	default N
+	---help---
+	  This is a video4linux driver for the SAA7115 sub-device.
+
+	  To compile this driver as a module, choose M here: the
+	  module will be called wis-saa7115
+
+config VIDEO_GO7007_TW9903
+	tristate "TW9903 subdev support"
+	depends on VIDEO_GO7007
+	default N
+	---help---
+	  This is a video4linux driver for the TW9903 sub-device.
+
+	  To compile this driver as a module, choose M here: the
+	  module will be called wis-tw9903
+
+config VIDEO_GO7007_UDA1342
+	tristate "UDA1342 subdev support"
+	depends on VIDEO_GO7007
+	default N
+	---help---
+	  This is a video4linux driver for the UDA1342 sub-device.
+
+	  To compile this driver as a module, choose M here: the
+	  module will be called wis-uda1342
+
+config VIDEO_GO7007_SONY_TUNER
+	tristate "Sony tuner subdev support"
+	depends on VIDEO_GO7007
+	default N
+	---help---
+	  This is a video4linux driver for the Sony Tuner sub-device.
+
+	  To compile this driver as a module, choose M here: the
+	  module will be called wis-sony-tuner
+
+config VIDEO_GO7007_TW2804
+	tristate "TW2804 subdev support"
+	depends on VIDEO_GO7007
+	default N
+	---help---
+	  This is a video4linux driver for the TW2804 sub-device.
+
+	  To compile this driver as a module, choose M here: the
+	  module will be called wis-tw2804
+

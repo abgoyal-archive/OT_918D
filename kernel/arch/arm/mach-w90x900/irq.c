@@ -1,0 +1,245 @@
+/* Copyright Statement:
+ *
+ * This software/firmware and related documentation ("MediaTek Software") are
+ * protected under relevant copyright laws. The information contained herein
+ * is confidential and proprietary to MediaTek Inc. and/or its licensors.
+ * Without the prior written permission of MediaTek inc. and/or its licensors,
+ * any reproduction, modification, use or disclosure of MediaTek Software,
+ * and information contained herein, in whole or in part, shall be strictly prohibited.
+ *
+ * MediaTek Inc. (C) 2010. All rights reserved.
+ *
+ * BY OPENING THIS FILE, RECEIVER HEREBY UNEQUIVOCALLY ACKNOWLEDGES AND AGREES
+ * THAT THE SOFTWARE/FIRMWARE AND ITS DOCUMENTATIONS ("MEDIATEK SOFTWARE")
+ * RECEIVED FROM MEDIATEK AND/OR ITS REPRESENTATIVES ARE PROVIDED TO RECEIVER ON
+ * AN "AS-IS" BASIS ONLY. MEDIATEK EXPRESSLY DISCLAIMS ANY AND ALL WARRANTIES,
+ * EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE IMPLIED WARRANTIES OF
+ * MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE OR NONINFRINGEMENT.
+ * NEITHER DOES MEDIATEK PROVIDE ANY WARRANTY WHATSOEVER WITH RESPECT TO THE
+ * SOFTWARE OF ANY THIRD PARTY WHICH MAY BE USED BY, INCORPORATED IN, OR
+ * SUPPLIED WITH THE MEDIATEK SOFTWARE, AND RECEIVER AGREES TO LOOK ONLY TO SUCH
+ * THIRD PARTY FOR ANY WARRANTY CLAIM RELATING THERETO. RECEIVER EXPRESSLY ACKNOWLEDGES
+ * THAT IT IS RECEIVER'S SOLE RESPONSIBILITY TO OBTAIN FROM ANY THIRD PARTY ALL PROPER LICENSES
+ * CONTAINED IN MEDIATEK SOFTWARE. MEDIATEK SHALL ALSO NOT BE RESPONSIBLE FOR ANY MEDIATEK
+ * SOFTWARE RELEASES MADE TO RECEIVER'S SPECIFICATION OR TO CONFORM TO A PARTICULAR
+ * STANDARD OR OPEN FORUM. RECEIVER'S SOLE AND EXCLUSIVE REMEDY AND MEDIATEK'S ENTIRE AND
+ * CUMULATIVE LIABILITY WITH RESPECT TO THE MEDIATEK SOFTWARE RELEASED HEREUNDER WILL BE,
+ * AT MEDIATEK'S OPTION, TO REVISE OR REPLACE THE MEDIATEK SOFTWARE AT ISSUE,
+ * OR REFUND ANY SOFTWARE LICENSE FEES OR SERVICE CHARGE PAID BY RECEIVER TO
+ * MEDIATEK FOR SUCH MEDIATEK SOFTWARE AT ISSUE.
+ */
+
+/*
+ * linux/arch/arm/mach-w90x900/irq.c
+ *
+ * based on linux/arch/arm/plat-s3c24xx/irq.c by Ben Dooks
+ *
+ * Copyright (c) 2008 Nuvoton technology corporation
+ * All rights reserved.
+ *
+ * Wan ZongShun <mcuos.com@gmail.com>
+ *
+ * This program is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation;version 2 of the License.
+ *
+ */
+
+#include <linux/init.h>
+#include <linux/module.h>
+#include <linux/interrupt.h>
+#include <linux/ioport.h>
+#include <linux/ptrace.h>
+#include <linux/sysdev.h>
+#include <linux/io.h>
+
+#include <asm/irq.h>
+#include <asm/mach/irq.h>
+
+#include <mach/hardware.h>
+#include <mach/regs-irq.h>
+
+struct group_irq {
+	unsigned long		gpen;
+	unsigned int		enabled;
+	void			(*enable)(struct group_irq *, int enable);
+};
+
+static DEFINE_SPINLOCK(groupirq_lock);
+
+#define DEFINE_GROUP(_name, _ctrlbit, _num)				\
+struct group_irq group_##_name = {					\
+		.enable		= nuc900_group_enable,			\
+		.gpen		= ((1 << _num) - 1) << _ctrlbit,	\
+	}
+
+static void nuc900_group_enable(struct group_irq *gpirq, int enable);
+
+static DEFINE_GROUP(nirq0, 0, 4);
+static DEFINE_GROUP(nirq1, 4, 4);
+static DEFINE_GROUP(usbh, 8, 2);
+static DEFINE_GROUP(ottimer, 16, 3);
+static DEFINE_GROUP(gdma, 20, 2);
+static DEFINE_GROUP(sc, 24, 2);
+static DEFINE_GROUP(i2c, 26, 2);
+static DEFINE_GROUP(ps2, 28, 2);
+
+static int group_irq_enable(struct group_irq *group_irq)
+{
+	unsigned long flags;
+
+	spin_lock_irqsave(&groupirq_lock, flags);
+	if (group_irq->enabled++ == 0)
+		(group_irq->enable)(group_irq, 1);
+	spin_unlock_irqrestore(&groupirq_lock, flags);
+
+	return 0;
+}
+
+static void group_irq_disable(struct group_irq *group_irq)
+{
+	unsigned long flags;
+
+	WARN_ON(group_irq->enabled == 0);
+
+	spin_lock_irqsave(&groupirq_lock, flags);
+	if (--group_irq->enabled == 0)
+		(group_irq->enable)(group_irq, 0);
+	spin_unlock_irqrestore(&groupirq_lock, flags);
+}
+
+static void nuc900_group_enable(struct group_irq *gpirq, int enable)
+{
+	unsigned int groupen = gpirq->gpen;
+	unsigned long regval;
+
+	regval = __raw_readl(REG_AIC_GEN);
+
+	if (enable)
+		regval |= groupen;
+	else
+		regval &= ~groupen;
+
+	__raw_writel(regval, REG_AIC_GEN);
+}
+
+static void nuc900_irq_mask(unsigned int irq)
+{
+	struct group_irq *group_irq;
+
+	group_irq = NULL;
+
+	__raw_writel(1 << irq, REG_AIC_MDCR);
+
+	switch (irq) {
+	case IRQ_GROUP0:
+		group_irq = &group_nirq0;
+		break;
+
+	case IRQ_GROUP1:
+		group_irq = &group_nirq1;
+		break;
+
+	case IRQ_USBH:
+		group_irq = &group_usbh;
+		break;
+
+	case IRQ_T_INT_GROUP:
+		group_irq = &group_ottimer;
+		break;
+
+	case IRQ_GDMAGROUP:
+		group_irq = &group_gdma;
+		break;
+
+	case IRQ_SCGROUP:
+		group_irq = &group_sc;
+		break;
+
+	case IRQ_I2CGROUP:
+		group_irq = &group_i2c;
+		break;
+
+	case IRQ_P2SGROUP:
+		group_irq = &group_ps2;
+		break;
+	}
+
+	if (group_irq)
+		group_irq_disable(group_irq);
+}
+
+/*
+ * By the w90p910 spec,any irq,only write 1
+ * to REG_AIC_EOSCR for ACK
+ */
+
+static void nuc900_irq_ack(unsigned int irq)
+{
+	__raw_writel(0x01, REG_AIC_EOSCR);
+}
+
+static void nuc900_irq_unmask(unsigned int irq)
+{
+	struct group_irq *group_irq;
+
+	group_irq = NULL;
+
+	__raw_writel(1 << irq, REG_AIC_MECR);
+
+	switch (irq) {
+	case IRQ_GROUP0:
+		group_irq = &group_nirq0;
+		break;
+
+	case IRQ_GROUP1:
+		group_irq = &group_nirq1;
+		break;
+
+	case IRQ_USBH:
+		group_irq = &group_usbh;
+		break;
+
+	case IRQ_T_INT_GROUP:
+		group_irq = &group_ottimer;
+		break;
+
+	case IRQ_GDMAGROUP:
+		group_irq = &group_gdma;
+		break;
+
+	case IRQ_SCGROUP:
+		group_irq = &group_sc;
+		break;
+
+	case IRQ_I2CGROUP:
+		group_irq = &group_i2c;
+		break;
+
+	case IRQ_P2SGROUP:
+		group_irq = &group_ps2;
+		break;
+	}
+
+	if (group_irq)
+		group_irq_enable(group_irq);
+}
+
+static struct irq_chip nuc900_irq_chip = {
+	.ack	   = nuc900_irq_ack,
+	.mask	   = nuc900_irq_mask,
+	.unmask	   = nuc900_irq_unmask,
+};
+
+void __init nuc900_init_irq(void)
+{
+	int irqno;
+
+	__raw_writel(0xFFFFFFFE, REG_AIC_MDCR);
+
+	for (irqno = IRQ_WDT; irqno <= IRQ_ADC; irqno++) {
+		set_irq_chip(irqno, &nuc900_irq_chip);
+		set_irq_handler(irqno, handle_level_irq);
+		set_irq_flags(irqno, IRQF_VALID);
+	}
+}

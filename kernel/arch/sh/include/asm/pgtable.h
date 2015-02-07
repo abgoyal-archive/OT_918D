@@ -1,0 +1,205 @@
+/* Copyright Statement:
+ *
+ * This software/firmware and related documentation ("MediaTek Software") are
+ * protected under relevant copyright laws. The information contained herein
+ * is confidential and proprietary to MediaTek Inc. and/or its licensors.
+ * Without the prior written permission of MediaTek inc. and/or its licensors,
+ * any reproduction, modification, use or disclosure of MediaTek Software,
+ * and information contained herein, in whole or in part, shall be strictly prohibited.
+ *
+ * MediaTek Inc. (C) 2010. All rights reserved.
+ *
+ * BY OPENING THIS FILE, RECEIVER HEREBY UNEQUIVOCALLY ACKNOWLEDGES AND AGREES
+ * THAT THE SOFTWARE/FIRMWARE AND ITS DOCUMENTATIONS ("MEDIATEK SOFTWARE")
+ * RECEIVED FROM MEDIATEK AND/OR ITS REPRESENTATIVES ARE PROVIDED TO RECEIVER ON
+ * AN "AS-IS" BASIS ONLY. MEDIATEK EXPRESSLY DISCLAIMS ANY AND ALL WARRANTIES,
+ * EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE IMPLIED WARRANTIES OF
+ * MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE OR NONINFRINGEMENT.
+ * NEITHER DOES MEDIATEK PROVIDE ANY WARRANTY WHATSOEVER WITH RESPECT TO THE
+ * SOFTWARE OF ANY THIRD PARTY WHICH MAY BE USED BY, INCORPORATED IN, OR
+ * SUPPLIED WITH THE MEDIATEK SOFTWARE, AND RECEIVER AGREES TO LOOK ONLY TO SUCH
+ * THIRD PARTY FOR ANY WARRANTY CLAIM RELATING THERETO. RECEIVER EXPRESSLY ACKNOWLEDGES
+ * THAT IT IS RECEIVER'S SOLE RESPONSIBILITY TO OBTAIN FROM ANY THIRD PARTY ALL PROPER LICENSES
+ * CONTAINED IN MEDIATEK SOFTWARE. MEDIATEK SHALL ALSO NOT BE RESPONSIBLE FOR ANY MEDIATEK
+ * SOFTWARE RELEASES MADE TO RECEIVER'S SPECIFICATION OR TO CONFORM TO A PARTICULAR
+ * STANDARD OR OPEN FORUM. RECEIVER'S SOLE AND EXCLUSIVE REMEDY AND MEDIATEK'S ENTIRE AND
+ * CUMULATIVE LIABILITY WITH RESPECT TO THE MEDIATEK SOFTWARE RELEASED HEREUNDER WILL BE,
+ * AT MEDIATEK'S OPTION, TO REVISE OR REPLACE THE MEDIATEK SOFTWARE AT ISSUE,
+ * OR REFUND ANY SOFTWARE LICENSE FEES OR SERVICE CHARGE PAID BY RECEIVER TO
+ * MEDIATEK FOR SUCH MEDIATEK SOFTWARE AT ISSUE.
+ */
+
+/*
+ * This file contains the functions and defines necessary to modify and
+ * use the SuperH page table tree.
+ *
+ * Copyright (C) 1999 Niibe Yutaka
+ * Copyright (C) 2002 - 2007 Paul Mundt
+ *
+ * This file is subject to the terms and conditions of the GNU General
+ * Public License.  See the file "COPYING" in the main directory of this
+ * archive for more details.
+ */
+#ifndef __ASM_SH_PGTABLE_H
+#define __ASM_SH_PGTABLE_H
+
+#ifdef CONFIG_X2TLB
+#include <asm/pgtable-3level.h>
+#else
+#include <asm/pgtable-2level.h>
+#endif
+#include <asm/page.h>
+
+#ifndef __ASSEMBLY__
+#include <asm/addrspace.h>
+#include <asm/fixmap.h>
+
+/*
+ * ZERO_PAGE is a global shared page that is always zero: used
+ * for zero-mapped memory areas etc..
+ */
+extern unsigned long empty_zero_page[PAGE_SIZE / sizeof(unsigned long)];
+#define ZERO_PAGE(vaddr) (virt_to_page(empty_zero_page))
+
+#endif /* !__ASSEMBLY__ */
+
+/*
+ * Effective and physical address definitions, to aid with sign
+ * extension.
+ */
+#define NEFF		32
+#define	NEFF_SIGN	(1LL << (NEFF - 1))
+#define	NEFF_MASK	(-1LL << NEFF)
+
+static inline unsigned long long neff_sign_extend(unsigned long val)
+{
+	unsigned long long extended = val;
+	return (extended & NEFF_SIGN) ? (extended | NEFF_MASK) : extended;
+}
+
+#ifdef CONFIG_29BIT
+#define NPHYS		29
+#else
+#define NPHYS		32
+#endif
+
+#define	NPHYS_SIGN	(1LL << (NPHYS - 1))
+#define	NPHYS_MASK	(-1LL << NPHYS)
+
+#define PGDIR_SIZE	(1UL << PGDIR_SHIFT)
+#define PGDIR_MASK	(~(PGDIR_SIZE-1))
+
+/* Entries per level */
+#define PTRS_PER_PTE	(PAGE_SIZE / (1 << PTE_MAGNITUDE))
+
+#define FIRST_USER_ADDRESS	0
+
+#define PHYS_ADDR_MASK29		0x1fffffff
+#define PHYS_ADDR_MASK32		0xffffffff
+
+#ifdef CONFIG_PMB
+static inline unsigned long phys_addr_mask(void)
+{
+	/* Is the MMU in 29bit mode? */
+	if (__in_29bit_mode())
+		return PHYS_ADDR_MASK29;
+
+	return PHYS_ADDR_MASK32;
+}
+#elif defined(CONFIG_32BIT)
+static inline unsigned long phys_addr_mask(void)
+{
+	return PHYS_ADDR_MASK32;
+}
+#else
+static inline unsigned long phys_addr_mask(void)
+{
+	return PHYS_ADDR_MASK29;
+}
+#endif
+
+#define PTE_PHYS_MASK		(phys_addr_mask() & PAGE_MASK)
+#define PTE_FLAGS_MASK		(~(PTE_PHYS_MASK) << PAGE_SHIFT)
+
+#ifdef CONFIG_SUPERH32
+#define VMALLOC_START	(P3SEG)
+#else
+#define VMALLOC_START	(0xf0000000)
+#endif
+#define VMALLOC_END	(FIXADDR_START-2*PAGE_SIZE)
+
+#if defined(CONFIG_SUPERH32)
+#include <asm/pgtable_32.h>
+#else
+#include <asm/pgtable_64.h>
+#endif
+
+/*
+ * SH-X and lower (legacy) SuperH parts (SH-3, SH-4, some SH-4A) can't do page
+ * protection for execute, and considers it the same as a read. Also, write
+ * permission implies read permission. This is the closest we can get..
+ *
+ * SH-X2 (SH7785) and later parts take this to the opposite end of the extreme,
+ * not only supporting separate execute, read, and write bits, but having
+ * completely separate permission bits for user and kernel space.
+ */
+	 /*xwr*/
+#define __P000	PAGE_NONE
+#define __P001	PAGE_READONLY
+#define __P010	PAGE_COPY
+#define __P011	PAGE_COPY
+#define __P100	PAGE_EXECREAD
+#define __P101	PAGE_EXECREAD
+#define __P110	PAGE_COPY
+#define __P111	PAGE_COPY
+
+#define __S000	PAGE_NONE
+#define __S001	PAGE_READONLY
+#define __S010	PAGE_WRITEONLY
+#define __S011	PAGE_SHARED
+#define __S100	PAGE_EXECREAD
+#define __S101	PAGE_EXECREAD
+#define __S110	PAGE_RWX
+#define __S111	PAGE_RWX
+
+typedef pte_t *pte_addr_t;
+
+#define kern_addr_valid(addr)	(1)
+
+#define io_remap_pfn_range(vma, vaddr, pfn, size, prot)		\
+		remap_pfn_range(vma, vaddr, pfn, size, prot)
+
+#define pte_pfn(x)		((unsigned long)(((x).pte_low >> PAGE_SHIFT)))
+
+/*
+ * Initialise the page table caches
+ */
+extern void pgtable_cache_init(void);
+
+struct vm_area_struct;
+
+extern void __update_cache(struct vm_area_struct *vma,
+			   unsigned long address, pte_t pte);
+extern void __update_tlb(struct vm_area_struct *vma,
+			 unsigned long address, pte_t pte);
+
+static inline void
+update_mmu_cache(struct vm_area_struct *vma, unsigned long address, pte_t *ptep)
+{
+	pte_t pte = *ptep;
+	__update_cache(vma, address, pte);
+	__update_tlb(vma, address, pte);
+}
+
+extern pgd_t swapper_pg_dir[PTRS_PER_PGD];
+extern void paging_init(void);
+extern void page_table_range_init(unsigned long start, unsigned long end,
+				  pgd_t *pgd);
+
+/* arch/sh/mm/mmap.c */
+#define HAVE_ARCH_UNMAPPED_AREA
+#define HAVE_ARCH_UNMAPPED_AREA_TOPDOWN
+
+#include <asm-generic/pgtable.h>
+
+#endif /* __ASM_SH_PGTABLE_H */

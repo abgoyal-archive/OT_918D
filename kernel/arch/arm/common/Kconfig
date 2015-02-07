@@ -1,0 +1,117 @@
+# Copyright Statement:
+#
+# This software/firmware and related documentation ("MediaTek Software") are
+# protected under relevant copyright laws. The information contained herein
+# is confidential and proprietary to MediaTek Inc. and/or its licensors.
+# Without the prior written permission of MediaTek inc. and/or its licensors,
+# any reproduction, modification, use or disclosure of MediaTek Software,
+# and information contained herein, in whole or in part, shall be strictly prohibited.
+#
+# MediaTek Inc. (C) 2010. All rights reserved.
+#
+# BY OPENING THIS FILE, RECEIVER HEREBY UNEQUIVOCALLY ACKNOWLEDGES AND AGREES
+# THAT THE SOFTWARE/FIRMWARE AND ITS DOCUMENTATIONS ("MEDIATEK SOFTWARE")
+# RECEIVED FROM MEDIATEK AND/OR ITS REPRESENTATIVES ARE PROVIDED TO RECEIVER ON
+# AN "AS-IS" BASIS ONLY. MEDIATEK EXPRESSLY DISCLAIMS ANY AND ALL WARRANTIES,
+# EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE IMPLIED WARRANTIES OF
+# MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE OR NONINFRINGEMENT.
+# NEITHER DOES MEDIATEK PROVIDE ANY WARRANTY WHATSOEVER WITH RESPECT TO THE
+# SOFTWARE OF ANY THIRD PARTY WHICH MAY BE USED BY, INCORPORATED IN, OR
+# SUPPLIED WITH THE MEDIATEK SOFTWARE, AND RECEIVER AGREES TO LOOK ONLY TO SUCH
+# THIRD PARTY FOR ANY WARRANTY CLAIM RELATING THERETO. RECEIVER EXPRESSLY ACKNOWLEDGES
+# THAT IT IS RECEIVER'S SOLE RESPONSIBILITY TO OBTAIN FROM ANY THIRD PARTY ALL PROPER LICENSES
+# CONTAINED IN MEDIATEK SOFTWARE. MEDIATEK SHALL ALSO NOT BE RESPONSIBLE FOR ANY MEDIATEK
+# SOFTWARE RELEASES MADE TO RECEIVER'S SPECIFICATION OR TO CONFORM TO A PARTICULAR
+# STANDARD OR OPEN FORUM. RECEIVER'S SOLE AND EXCLUSIVE REMEDY AND MEDIATEK'S ENTIRE AND
+# CUMULATIVE LIABILITY WITH RESPECT TO THE MEDIATEK SOFTWARE RELEASED HEREUNDER WILL BE,
+# AT MEDIATEK'S OPTION, TO REVISE OR REPLACE THE MEDIATEK SOFTWARE AT ISSUE,
+# OR REFUND ANY SOFTWARE LICENSE FEES OR SERVICE CHARGE PAID BY RECEIVER TO
+# MEDIATEK FOR SUCH MEDIATEK SOFTWARE AT ISSUE.
+
+
+config ARM_GIC
+	bool
+
+config ARM_VIC
+	bool
+
+config ARM_VIC_NR
+	int
+	default 2
+	depends on ARM_VIC
+	help
+	  The maximum number of VICs available in the system, for
+	  power management.
+
+config ICST
+	bool
+
+config PL330
+	bool
+
+config SA1111
+	bool
+	select DMABOUNCE if !ARCH_PXA
+
+config DMABOUNCE
+	bool
+	select ZONE_DMA
+
+config TIMER_ACORN
+	bool
+
+config SHARP_LOCOMO
+	bool
+
+config SHARP_PARAM
+	bool
+
+config SHARP_SCOOP
+	bool
+
+config COMMON_CLKDEV
+	bool
+	select HAVE_CLK
+
+config FIQ_GLUE
+	bool
+	select FIQ
+
+config FIQ_DEBUGGER
+	bool "FIQ Mode Serial Debugger"
+	select FIQ
+	select FIQ_GLUE
+	select KERNEL_DEBUGGER_CORE
+	default n
+	help
+	  The FIQ serial debugger can accept commands even when the
+	  kernel is unresponsive due to being stuck with interrupts
+	  disabled.  Depends on the kernel debugger core in drivers/misc.
+
+
+config FIQ_DEBUGGER_NO_SLEEP
+	bool "Keep serial debugger active"
+	depends on FIQ_DEBUGGER
+	default n
+	help
+	  Enables the serial debugger at boot. Passing
+	  fiq_debugger.no_sleep on the kernel commandline will
+	  override this config option.
+
+config FIQ_DEBUGGER_WAKEUP_IRQ_ALWAYS_ON
+	bool "Don't disable wakeup IRQ when debugger is active"
+	depends on FIQ_DEBUGGER
+	default n
+	help
+	  Don't disable the wakeup irq when enabling the uart clock.  This will
+	  cause extra interrupts, but it makes the serial debugger usable with
+	  on some MSM radio builds that ignore the uart clock request in power
+	  collapse.
+
+config FIQ_DEBUGGER_CONSOLE
+	bool "Console on FIQ Serial Debugger port"
+	depends on FIQ_DEBUGGER
+	default n
+	help
+	  Enables a console so that printk messages are displayed on
+	  the debugger serial port as the occur.

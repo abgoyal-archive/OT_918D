@@ -1,0 +1,225 @@
+/* Copyright Statement:
+ *
+ * This software/firmware and related documentation ("MediaTek Software") are
+ * protected under relevant copyright laws. The information contained herein
+ * is confidential and proprietary to MediaTek Inc. and/or its licensors.
+ * Without the prior written permission of MediaTek inc. and/or its licensors,
+ * any reproduction, modification, use or disclosure of MediaTek Software,
+ * and information contained herein, in whole or in part, shall be strictly prohibited.
+ *
+ * MediaTek Inc. (C) 2010. All rights reserved.
+ *
+ * BY OPENING THIS FILE, RECEIVER HEREBY UNEQUIVOCALLY ACKNOWLEDGES AND AGREES
+ * THAT THE SOFTWARE/FIRMWARE AND ITS DOCUMENTATIONS ("MEDIATEK SOFTWARE")
+ * RECEIVED FROM MEDIATEK AND/OR ITS REPRESENTATIVES ARE PROVIDED TO RECEIVER ON
+ * AN "AS-IS" BASIS ONLY. MEDIATEK EXPRESSLY DISCLAIMS ANY AND ALL WARRANTIES,
+ * EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE IMPLIED WARRANTIES OF
+ * MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE OR NONINFRINGEMENT.
+ * NEITHER DOES MEDIATEK PROVIDE ANY WARRANTY WHATSOEVER WITH RESPECT TO THE
+ * SOFTWARE OF ANY THIRD PARTY WHICH MAY BE USED BY, INCORPORATED IN, OR
+ * SUPPLIED WITH THE MEDIATEK SOFTWARE, AND RECEIVER AGREES TO LOOK ONLY TO SUCH
+ * THIRD PARTY FOR ANY WARRANTY CLAIM RELATING THERETO. RECEIVER EXPRESSLY ACKNOWLEDGES
+ * THAT IT IS RECEIVER'S SOLE RESPONSIBILITY TO OBTAIN FROM ANY THIRD PARTY ALL PROPER LICENSES
+ * CONTAINED IN MEDIATEK SOFTWARE. MEDIATEK SHALL ALSO NOT BE RESPONSIBLE FOR ANY MEDIATEK
+ * SOFTWARE RELEASES MADE TO RECEIVER'S SPECIFICATION OR TO CONFORM TO A PARTICULAR
+ * STANDARD OR OPEN FORUM. RECEIVER'S SOLE AND EXCLUSIVE REMEDY AND MEDIATEK'S ENTIRE AND
+ * CUMULATIVE LIABILITY WITH RESPECT TO THE MEDIATEK SOFTWARE RELEASED HEREUNDER WILL BE,
+ * AT MEDIATEK'S OPTION, TO REVISE OR REPLACE THE MEDIATEK SOFTWARE AT ISSUE,
+ * OR REFUND ANY SOFTWARE LICENSE FEES OR SERVICE CHARGE PAID BY RECEIVER TO
+ * MEDIATEK FOR SUCH MEDIATEK SOFTWARE AT ISSUE.
+ */
+
+/*
+ * Copyright (C) 2009 Apple Inc. All Rights Reserved.
+ * Copyright (C) 2009 Brent Fulgham. All Rights Reserved.
+ *
+ * Redistribution and use in source and binary forms, with or without
+ * modification, are permitted provided that the following conditions
+ * are met:
+ * 1. Redistributions of source code must retain the above copyright
+ *    notice, this list of conditions and the following disclaimer.
+ * 2. Redistributions in binary form must reproduce the above copyright
+ *    notice, this list of conditions and the following disclaimer in the
+ *    documentation and/or other materials provided with the distribution.
+ *
+ * THIS SOFTWARE IS PROVIDED BY APPLE INC. ``AS IS'' AND ANY
+ * EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+ * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR
+ * PURPOSE ARE DISCLAIMED.  IN NO EVENT SHALL APPLE INC. OR
+ * CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL,
+ * EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO,
+ * PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR
+ * PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY
+ * OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
+ * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
+ * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE. 
+ */
+
+#include "stdafx.h"
+#include "PrintWebUIDelegate.h"
+
+#include <commctrl.h>
+#include <commdlg.h>
+#include <objbase.h>
+#include <shlwapi.h>
+#include <wininet.h>
+
+#include <WebKit/WebKitCOMAPI.h>
+
+static const int MARGIN = 20;
+
+HRESULT PrintWebUIDelegate::QueryInterface(REFIID riid, void** ppvObject)
+{
+    *ppvObject = 0;
+    if (IsEqualIID(riid, IID_IUnknown))
+        *ppvObject = static_cast<IWebUIDelegate*>(this);
+    else if (IsEqualIID(riid, IID_IWebUIDelegate))
+        *ppvObject = static_cast<IWebUIDelegate*>(this);
+    else
+        return E_NOINTERFACE;
+
+    AddRef();
+    return S_OK;
+}
+
+ULONG PrintWebUIDelegate::AddRef(void)
+{
+    return ++m_refCount;
+}
+
+ULONG PrintWebUIDelegate::Release(void)
+{
+    ULONG newRef = --m_refCount;
+    if (!newRef)
+        delete this;
+
+    return newRef;
+}
+
+HRESULT PrintWebUIDelegate::webViewPrintingMarginRect(IWebView* view, RECT* rect)
+{
+    if (!view || !rect)
+        return E_POINTER;
+
+    IWebFrame* mainFrame = 0;
+    if (FAILED(view->mainFrame(&mainFrame)))
+        return E_FAIL;
+
+    IWebFramePrivate* privateFrame = 0;
+    if (FAILED(mainFrame->QueryInterface(&privateFrame))) {
+        mainFrame->Release();
+        return E_FAIL;
+    }
+
+    privateFrame->frameBounds(rect);
+
+    rect->left += MARGIN;
+    rect->top += MARGIN;
+    HDC dc = ::GetDC(0);
+    rect->right = (::GetDeviceCaps(dc, LOGPIXELSX) * 6.5) - MARGIN;
+    rect->bottom = (::GetDeviceCaps(dc, LOGPIXELSY) * 11) - MARGIN;
+    ::ReleaseDC(0, dc);
+
+    privateFrame->Release();
+    mainFrame->Release();
+
+    return S_OK;
+}
+
+HRESULT PrintWebUIDelegate::webViewHeaderHeight(IWebView* webView, float* height)
+{
+   if (!webView || !height)
+      return E_POINTER;
+   
+   HDC dc = ::GetDC(0);
+
+   TEXTMETRIC textMetric;
+   ::GetTextMetrics(dc, &textMetric);
+   ::ReleaseDC(0, dc);
+
+   *height = 1.1 * textMetric.tmHeight;
+
+   return S_OK;
+}
+
+HRESULT PrintWebUIDelegate::webViewFooterHeight(IWebView* webView, float* height)
+{
+   if (!webView || !height)
+      return E_POINTER;
+
+   HDC dc = ::GetDC(0);
+
+   TEXTMETRIC textMetric;
+   ::GetTextMetrics(dc, &textMetric);
+   ::ReleaseDC(0, dc);
+
+   *height = 1.1 * textMetric.tmHeight;
+
+   return S_OK;
+}
+
+HRESULT PrintWebUIDelegate::drawHeaderInRect( 
+            /* [in] */ IWebView *webView,
+            /* [in] */ RECT *rect,
+            /* [in] */ OLE_HANDLE drawingContext)
+{
+   if (!webView || !rect)
+      return E_POINTER;
+
+   // Turn off header for now.
+   HDC dc = reinterpret_cast<HDC>(drawingContext);
+
+   HFONT hFont = (HFONT)::GetStockObject(ANSI_VAR_FONT);
+   HFONT hOldFont = (HFONT)::SelectObject(dc, hFont);
+
+   LPCTSTR header(_T("[Sample Header]"));
+   int length = _tcslen(header);
+
+   int rc = ::DrawText(dc, header, length, rect, DT_LEFT | DT_NOCLIP | DT_VCENTER  | DT_SINGLELINE);
+   ::SelectObject(dc, hOldFont);
+
+   if (!rc)
+      return E_FAIL;
+
+   ::MoveToEx(dc, rect->left, rect->bottom, 0);
+   HPEN hPen = (HPEN)::GetStockObject(BLACK_PEN);
+   HPEN hOldPen = (HPEN)::SelectObject(dc, hPen);
+   ::LineTo(dc, rect->right, rect->bottom);
+   ::SelectObject(dc, hOldPen);
+
+   return S_OK;
+}
+
+HRESULT PrintWebUIDelegate::drawFooterInRect( 
+            /* [in] */ IWebView *webView,
+            /* [in] */ RECT *rect,
+            /* [in] */ OLE_HANDLE drawingContext,
+            /* [in] */ UINT pageIndex,
+            /* [in] */ UINT pageCount)
+{
+   if (!webView || !rect)
+      return E_POINTER;
+
+   HDC dc = reinterpret_cast<HDC>(drawingContext);
+
+   HFONT hFont = (HFONT)::GetStockObject(ANSI_VAR_FONT);
+   HFONT hOldFont = (HFONT)::SelectObject(dc, hFont);
+
+   LPCTSTR footer(_T("[Sample Footer]"));
+   int length = _tcslen(footer);
+
+   // Add a line, 1/10th inch above the footer text from left margin to right margin.
+   ::MoveToEx(dc, rect->left, rect->top, 0);
+   HPEN hPen = (HPEN)::GetStockObject(BLACK_PEN);
+   HPEN hOldPen = (HPEN)::SelectObject(dc, hPen);
+   ::LineTo(dc, rect->right, rect->top);
+   ::SelectObject(dc, hOldPen);
+
+   int rc = ::DrawText(dc, footer, length, rect, DT_LEFT | DT_NOCLIP | DT_VCENTER  | DT_SINGLELINE);
+   ::SelectObject(dc, hOldFont);
+
+   if (!rc)
+      return E_FAIL;
+
+   return S_OK;
+}

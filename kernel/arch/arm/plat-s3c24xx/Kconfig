@@ -1,0 +1,203 @@
+# Copyright Statement:
+#
+# This software/firmware and related documentation ("MediaTek Software") are
+# protected under relevant copyright laws. The information contained herein
+# is confidential and proprietary to MediaTek Inc. and/or its licensors.
+# Without the prior written permission of MediaTek inc. and/or its licensors,
+# any reproduction, modification, use or disclosure of MediaTek Software,
+# and information contained herein, in whole or in part, shall be strictly prohibited.
+#
+# MediaTek Inc. (C) 2010. All rights reserved.
+#
+# BY OPENING THIS FILE, RECEIVER HEREBY UNEQUIVOCALLY ACKNOWLEDGES AND AGREES
+# THAT THE SOFTWARE/FIRMWARE AND ITS DOCUMENTATIONS ("MEDIATEK SOFTWARE")
+# RECEIVED FROM MEDIATEK AND/OR ITS REPRESENTATIVES ARE PROVIDED TO RECEIVER ON
+# AN "AS-IS" BASIS ONLY. MEDIATEK EXPRESSLY DISCLAIMS ANY AND ALL WARRANTIES,
+# EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE IMPLIED WARRANTIES OF
+# MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE OR NONINFRINGEMENT.
+# NEITHER DOES MEDIATEK PROVIDE ANY WARRANTY WHATSOEVER WITH RESPECT TO THE
+# SOFTWARE OF ANY THIRD PARTY WHICH MAY BE USED BY, INCORPORATED IN, OR
+# SUPPLIED WITH THE MEDIATEK SOFTWARE, AND RECEIVER AGREES TO LOOK ONLY TO SUCH
+# THIRD PARTY FOR ANY WARRANTY CLAIM RELATING THERETO. RECEIVER EXPRESSLY ACKNOWLEDGES
+# THAT IT IS RECEIVER'S SOLE RESPONSIBILITY TO OBTAIN FROM ANY THIRD PARTY ALL PROPER LICENSES
+# CONTAINED IN MEDIATEK SOFTWARE. MEDIATEK SHALL ALSO NOT BE RESPONSIBLE FOR ANY MEDIATEK
+# SOFTWARE RELEASES MADE TO RECEIVER'S SPECIFICATION OR TO CONFORM TO A PARTICULAR
+# STANDARD OR OPEN FORUM. RECEIVER'S SOLE AND EXCLUSIVE REMEDY AND MEDIATEK'S ENTIRE AND
+# CUMULATIVE LIABILITY WITH RESPECT TO THE MEDIATEK SOFTWARE RELEASED HEREUNDER WILL BE,
+# AT MEDIATEK'S OPTION, TO REVISE OR REPLACE THE MEDIATEK SOFTWARE AT ISSUE,
+# OR REFUND ANY SOFTWARE LICENSE FEES OR SERVICE CHARGE PAID BY RECEIVER TO
+# MEDIATEK FOR SUCH MEDIATEK SOFTWARE AT ISSUE.
+
+
+# Copyright 2007 Simtec Electronics
+#
+# Licensed under GPLv2
+
+config PLAT_S3C24XX
+	bool
+	depends on ARCH_S3C2410 || ARCH_S3C24A0
+	default y
+	select NO_IOPORT
+	select ARCH_REQUIRE_GPIOLIB
+	select S3C_DEVICE_NAND
+	select S3C_GPIO_CFG_S3C24XX
+	help
+	  Base platform code for any Samsung S3C24XX device
+
+if PLAT_S3C24XX
+
+# low-level serial option nodes
+
+config CPU_LLSERIAL_S3C2410_ONLY
+	bool
+	default y if CPU_LLSERIAL_S3C2410 && !CPU_LLSERIAL_S3C2440
+
+config CPU_LLSERIAL_S3C2440_ONLY
+	bool
+	default y if CPU_LLSERIAL_S3C2440 && !CPU_LLSERIAL_S3C2410
+
+config CPU_LLSERIAL_S3C2410
+	bool
+	help
+	  Selected if there is an S3C2410 (or register compatible) serial
+	  low-level implementation needed
+
+config CPU_LLSERIAL_S3C2440
+	bool
+	help
+	  Selected if there is an S3C2440 (or register compatible) serial
+	  low-level implementation needed
+
+# code that is shared between a number of the s3c24xx implementations
+
+config S3C2410_CLOCK
+	bool
+	help
+	  Clock code for the S3C2410, and similar processors which
+	  is currently includes the S3C2410, S3C2440, S3C2442.
+
+config S3C2443_CLOCK
+	bool
+	help
+	  Clock code for the S3C2443 and similar processors, which includes
+	  the S3C2416 and S3C2450.
+
+config S3C24XX_DCLK
+	bool
+	help
+	  Clock code for supporting DCLK/CLKOUT on S3C24XX architectures
+
+config S3C24XX_PWM
+	bool "PWM device support"
+	select HAVE_PWM
+	help
+	  Support for exporting the PWM timer blocks via the pwm device
+	  system.
+
+# gpio configurations
+
+config S3C24XX_GPIO_EXTRA
+	int
+	default 128 if S3C24XX_GPIO_EXTRA128
+	default 64 if S3C24XX_GPIO_EXTRA64
+	default 0
+
+config S3C24XX_GPIO_EXTRA64
+	bool
+	help
+	  Add an extra 64 gpio numbers to the available GPIO pool. This is
+	  available for boards that need extra gpios for external devices.
+
+config S3C24XX_GPIO_EXTRA128
+	bool
+	help
+	  Add an extra 128 gpio numbers to the available GPIO pool. This is
+	  available for boards that need extra gpios for external devices.
+
+config PM_SIMTEC
+	bool
+	help
+	  Common power management code for systems that are
+	  compatible with the Simtec style of power management
+
+config S3C2410_DMA
+	bool "S3C2410 DMA support"
+	depends on ARCH_S3C2410
+	select S3C_DMA
+	help
+	  S3C2410 DMA support. This is needed for drivers like sound which
+	  use the S3C2410's DMA system to move data to and from the
+	  peripheral blocks.
+
+config S3C2410_DMA_DEBUG
+	bool "S3C2410 DMA support debug"
+	depends on ARCH_S3C2410 && S3C2410_DMA
+	help
+	  Enable debugging output for the DMA code. This option sends info
+	  to the kernel log, at priority KERN_DEBUG.
+
+# SPI default pin configuration code
+
+config S3C24XX_SPI_BUS0_GPE11_GPE12_GPE13
+	bool
+	help
+	  SPI GPIO configuration code for BUS0 when connected to
+	  GPE11, GPE12 and GPE13.
+
+config S3C24XX_SPI_BUS1_GPG5_GPG6_GPG7
+	bool
+	help
+	  SPI GPIO configuration code for BUS 1 when connected to
+	  GPG5, GPG6 and GPG7.
+
+config S3C24XX_SPI_BUS1_GPD8_GPD9_GPD10
+	bool
+	help
+	  SPI GPIO configuration code for BUS 1 when connected to
+	  GPD8, GPD9 and GPD10.
+
+# common code for s3c24xx based machines, such as the SMDKs.
+
+# cpu frequency items common between s3c2410 and s3c2440/s3c2442
+
+config S3C2410_IOTIMING
+	bool
+	depends on CPU_FREQ_S3C24XX
+	help
+	  Internal node to select io timing code that is common to the s3c2410
+	  and s3c2440/s3c2442 cpu frequency support.
+
+config S3C2410_CPUFREQ_UTILS
+	bool
+	depends on CPU_FREQ_S3C24XX
+	help
+	  Internal node to select timing code that is common to the s3c2410
+	  and s3c2440/s3c244 cpu frequency support.
+
+# cpu frequency support common to s3c2412, s3c2413 and s3c2442
+
+config S3C2412_IOTIMING
+	bool
+	depends on CPU_FREQ_S3C24XX && (CPU_S3C2412 || CPU_S3C2443)
+	help
+	  Intel node to select io timing code that is common to the s3c2412
+	  and the s3c2443.
+
+config MACH_SMDK
+	bool
+	help
+	  Common machine code for SMDK2410 and SMDK2440
+
+config S3C24XX_SIMTEC_AUDIO
+	bool
+	depends on (ARCH_BAST || MACH_VR1000 || MACH_OSIRIS || MACH_ANUBIS)
+	default y
+	help
+	  Add audio devices for common Simtec S3C24XX boards
+
+config S3C2410_SETUP_TS
+	bool
+	help
+	  Compile in platform device definition for Samsung TouchScreen.
+
+endif

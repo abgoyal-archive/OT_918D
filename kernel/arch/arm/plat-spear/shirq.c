@@ -1,0 +1,149 @@
+/* Copyright Statement:
+ *
+ * This software/firmware and related documentation ("MediaTek Software") are
+ * protected under relevant copyright laws. The information contained herein
+ * is confidential and proprietary to MediaTek Inc. and/or its licensors.
+ * Without the prior written permission of MediaTek inc. and/or its licensors,
+ * any reproduction, modification, use or disclosure of MediaTek Software,
+ * and information contained herein, in whole or in part, shall be strictly prohibited.
+ *
+ * MediaTek Inc. (C) 2010. All rights reserved.
+ *
+ * BY OPENING THIS FILE, RECEIVER HEREBY UNEQUIVOCALLY ACKNOWLEDGES AND AGREES
+ * THAT THE SOFTWARE/FIRMWARE AND ITS DOCUMENTATIONS ("MEDIATEK SOFTWARE")
+ * RECEIVED FROM MEDIATEK AND/OR ITS REPRESENTATIVES ARE PROVIDED TO RECEIVER ON
+ * AN "AS-IS" BASIS ONLY. MEDIATEK EXPRESSLY DISCLAIMS ANY AND ALL WARRANTIES,
+ * EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE IMPLIED WARRANTIES OF
+ * MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE OR NONINFRINGEMENT.
+ * NEITHER DOES MEDIATEK PROVIDE ANY WARRANTY WHATSOEVER WITH RESPECT TO THE
+ * SOFTWARE OF ANY THIRD PARTY WHICH MAY BE USED BY, INCORPORATED IN, OR
+ * SUPPLIED WITH THE MEDIATEK SOFTWARE, AND RECEIVER AGREES TO LOOK ONLY TO SUCH
+ * THIRD PARTY FOR ANY WARRANTY CLAIM RELATING THERETO. RECEIVER EXPRESSLY ACKNOWLEDGES
+ * THAT IT IS RECEIVER'S SOLE RESPONSIBILITY TO OBTAIN FROM ANY THIRD PARTY ALL PROPER LICENSES
+ * CONTAINED IN MEDIATEK SOFTWARE. MEDIATEK SHALL ALSO NOT BE RESPONSIBLE FOR ANY MEDIATEK
+ * SOFTWARE RELEASES MADE TO RECEIVER'S SPECIFICATION OR TO CONFORM TO A PARTICULAR
+ * STANDARD OR OPEN FORUM. RECEIVER'S SOLE AND EXCLUSIVE REMEDY AND MEDIATEK'S ENTIRE AND
+ * CUMULATIVE LIABILITY WITH RESPECT TO THE MEDIATEK SOFTWARE RELEASED HEREUNDER WILL BE,
+ * AT MEDIATEK'S OPTION, TO REVISE OR REPLACE THE MEDIATEK SOFTWARE AT ISSUE,
+ * OR REFUND ANY SOFTWARE LICENSE FEES OR SERVICE CHARGE PAID BY RECEIVER TO
+ * MEDIATEK FOR SUCH MEDIATEK SOFTWARE AT ISSUE.
+ */
+
+/*
+ * arch/arm/plat-spear/shirq.c
+ *
+ * SPEAr platform shared irq layer source file
+ *
+ * Copyright (C) 2009 ST Microelectronics
+ * Viresh Kumar<viresh.kumar@st.com>
+ *
+ * This file is licensed under the terms of the GNU General Public
+ * License version 2. This program is licensed "as is" without any
+ * warranty of any kind, whether express or implied.
+ */
+
+#include <linux/err.h>
+#include <linux/io.h>
+#include <linux/irq.h>
+#include <linux/spinlock.h>
+#include <plat/shirq.h>
+
+struct spear_shirq *shirq;
+static DEFINE_SPINLOCK(lock);
+
+static void shirq_irq_mask(unsigned irq)
+{
+	struct spear_shirq *shirq = get_irq_chip_data(irq);
+	u32 val, id = irq - shirq->dev_config[0].virq;
+	unsigned long flags;
+
+	if ((shirq->regs.enb_reg == -1) || shirq->dev_config[id].enb_mask == -1)
+		return;
+
+	spin_lock_irqsave(&lock, flags);
+	val = readl(shirq->regs.base + shirq->regs.enb_reg);
+	if (shirq->regs.reset_to_enb)
+		val |= shirq->dev_config[id].enb_mask;
+	else
+		val &= ~(shirq->dev_config[id].enb_mask);
+	writel(val, shirq->regs.base + shirq->regs.enb_reg);
+	spin_unlock_irqrestore(&lock, flags);
+}
+
+static void shirq_irq_unmask(unsigned irq)
+{
+	struct spear_shirq *shirq = get_irq_chip_data(irq);
+	u32 val, id = irq - shirq->dev_config[0].virq;
+	unsigned long flags;
+
+	if ((shirq->regs.enb_reg == -1) || shirq->dev_config[id].enb_mask == -1)
+		return;
+
+	spin_lock_irqsave(&lock, flags);
+	val = readl(shirq->regs.base + shirq->regs.enb_reg);
+	if (shirq->regs.reset_to_enb)
+		val &= ~(shirq->dev_config[id].enb_mask);
+	else
+		val |= shirq->dev_config[id].enb_mask;
+	writel(val, shirq->regs.base + shirq->regs.enb_reg);
+	spin_unlock_irqrestore(&lock, flags);
+}
+
+static struct irq_chip shirq_chip = {
+	.name		= "spear_shirq",
+	.ack		= shirq_irq_mask,
+	.mask		= shirq_irq_mask,
+	.unmask		= shirq_irq_unmask,
+};
+
+static void shirq_handler(unsigned irq, struct irq_desc *desc)
+{
+	u32 i, val, mask;
+	struct spear_shirq *shirq = get_irq_data(irq);
+
+	desc->chip->ack(irq);
+	while ((val = readl(shirq->regs.base + shirq->regs.status_reg) &
+				shirq->regs.status_reg_mask)) {
+		for (i = 0; (i < shirq->dev_count) && val; i++) {
+			if (!(shirq->dev_config[i].status_mask & val))
+				continue;
+
+			generic_handle_irq(shirq->dev_config[i].virq);
+
+			/* clear interrupt */
+			val &= ~shirq->dev_config[i].status_mask;
+			if ((shirq->regs.clear_reg == -1) ||
+					shirq->dev_config[i].clear_mask == -1)
+				continue;
+			mask = readl(shirq->regs.base + shirq->regs.clear_reg);
+			if (shirq->regs.reset_to_clear)
+				mask &= ~shirq->dev_config[i].clear_mask;
+			else
+				mask |= shirq->dev_config[i].clear_mask;
+			writel(mask, shirq->regs.base + shirq->regs.clear_reg);
+		}
+	}
+	desc->chip->unmask(irq);
+}
+
+int spear_shirq_register(struct spear_shirq *shirq)
+{
+	int i;
+
+	if (!shirq || !shirq->dev_config || !shirq->regs.base)
+		return -EFAULT;
+
+	if (!shirq->dev_count)
+		return -EINVAL;
+
+	set_irq_chained_handler(shirq->irq, shirq_handler);
+	for (i = 0; i < shirq->dev_count; i++) {
+		set_irq_chip(shirq->dev_config[i].virq, &shirq_chip);
+		set_irq_handler(shirq->dev_config[i].virq, handle_simple_irq);
+		set_irq_flags(shirq->dev_config[i].virq, IRQF_VALID);
+		set_irq_chip_data(shirq->dev_config[i].virq, shirq);
+	}
+
+	set_irq_data(shirq->irq, shirq);
+	return 0;
+}

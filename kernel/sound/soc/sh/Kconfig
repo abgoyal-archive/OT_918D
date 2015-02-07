@@ -1,0 +1,104 @@
+# Copyright Statement:
+#
+# This software/firmware and related documentation ("MediaTek Software") are
+# protected under relevant copyright laws. The information contained herein
+# is confidential and proprietary to MediaTek Inc. and/or its licensors.
+# Without the prior written permission of MediaTek inc. and/or its licensors,
+# any reproduction, modification, use or disclosure of MediaTek Software,
+# and information contained herein, in whole or in part, shall be strictly prohibited.
+#
+# MediaTek Inc. (C) 2010. All rights reserved.
+#
+# BY OPENING THIS FILE, RECEIVER HEREBY UNEQUIVOCALLY ACKNOWLEDGES AND AGREES
+# THAT THE SOFTWARE/FIRMWARE AND ITS DOCUMENTATIONS ("MEDIATEK SOFTWARE")
+# RECEIVED FROM MEDIATEK AND/OR ITS REPRESENTATIVES ARE PROVIDED TO RECEIVER ON
+# AN "AS-IS" BASIS ONLY. MEDIATEK EXPRESSLY DISCLAIMS ANY AND ALL WARRANTIES,
+# EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE IMPLIED WARRANTIES OF
+# MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE OR NONINFRINGEMENT.
+# NEITHER DOES MEDIATEK PROVIDE ANY WARRANTY WHATSOEVER WITH RESPECT TO THE
+# SOFTWARE OF ANY THIRD PARTY WHICH MAY BE USED BY, INCORPORATED IN, OR
+# SUPPLIED WITH THE MEDIATEK SOFTWARE, AND RECEIVER AGREES TO LOOK ONLY TO SUCH
+# THIRD PARTY FOR ANY WARRANTY CLAIM RELATING THERETO. RECEIVER EXPRESSLY ACKNOWLEDGES
+# THAT IT IS RECEIVER'S SOLE RESPONSIBILITY TO OBTAIN FROM ANY THIRD PARTY ALL PROPER LICENSES
+# CONTAINED IN MEDIATEK SOFTWARE. MEDIATEK SHALL ALSO NOT BE RESPONSIBLE FOR ANY MEDIATEK
+# SOFTWARE RELEASES MADE TO RECEIVER'S SPECIFICATION OR TO CONFORM TO A PARTICULAR
+# STANDARD OR OPEN FORUM. RECEIVER'S SOLE AND EXCLUSIVE REMEDY AND MEDIATEK'S ENTIRE AND
+# CUMULATIVE LIABILITY WITH RESPECT TO THE MEDIATEK SOFTWARE RELEASED HEREUNDER WILL BE,
+# AT MEDIATEK'S OPTION, TO REVISE OR REPLACE THE MEDIATEK SOFTWARE AT ISSUE,
+# OR REFUND ANY SOFTWARE LICENSE FEES OR SERVICE CHARGE PAID BY RECEIVER TO
+# MEDIATEK FOR SUCH MEDIATEK SOFTWARE AT ISSUE.
+
+
+menu "SoC Audio support for SuperH"
+	depends on SUPERH || ARCH_SHMOBILE
+
+config SND_SOC_PCM_SH7760
+	tristate "SoC Audio support for Renesas SH7760"
+	depends on CPU_SUBTYPE_SH7760 && SH_DMABRG
+	help
+	  Enable this option for SH7760 AC97/I2S audio support.
+
+
+##
+## Audio unit modules
+##
+
+config SND_SOC_SH4_HAC
+	tristate
+	select AC97_BUS
+	select SND_SOC_AC97_BUS
+
+config SND_SOC_SH4_SSI
+	tristate
+
+config SND_SOC_SH4_FSI
+	tristate "SH4 FSI support"
+	help
+	  This option enables FSI sound support
+
+config SND_SOC_SH4_SIU
+	tristate
+	depends on (SUPERH || ARCH_SHMOBILE) && HAVE_CLK
+	select DMA_ENGINE
+	select DMADEVICES
+	select SH_DMAE
+	select FW_LOADER
+
+##
+## Boards
+##
+
+config SND_SH7760_AC97
+	tristate "SH7760 AC97 sound support"
+	depends on CPU_SUBTYPE_SH7760 && SND_SOC_PCM_SH7760
+	select SND_SOC_SH4_HAC
+	select SND_SOC_AC97_CODEC
+	help
+	  This option enables generic sound support for the first
+	  AC97 unit of the SH7760.
+
+config SND_FSI_AK4642
+	bool "FSI-AK4642 sound support"
+	depends on SND_SOC_SH4_FSI
+	select SND_SOC_AK4642
+	help
+	  This option enables generic sound support for the
+	  FSI - AK4642 unit
+
+config SND_FSI_DA7210
+	bool "FSI-DA7210 sound support"
+	depends on SND_SOC_SH4_FSI
+	select SND_SOC_DA7210
+	help
+	  This option enables generic sound support for the
+	  FSI - DA7210 unit
+
+config SND_SIU_MIGOR
+	tristate "SIU sound support on Migo-R"
+	depends on SH_MIGOR
+	select SND_SOC_SH4_SIU
+	select SND_SOC_WM8978
+	help
+	  This option enables sound support for the SH7722 Migo-R board
+
+endmenu

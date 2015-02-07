@@ -1,0 +1,2 @@
+../mediatek/source/kernel/drivers/lttng/ltt-relay.ko
+../mediatek/source/kernel/drivers/lttng/ltt-relay-lockless.o ../mediatek/source/kernel/drivers/lttng/ltt-relay-alloc.o ../mediatek/source/kernel/drivers/lttng/ltt-relay-splice.o ../mediatek/source/kernel/drivers/lttng/ltt-relay-vfs.o ../mediatek/source/kernel/drivers/lttng/ltt-event-header.o ../mediatek/source/kernel/drivers/lttng/ltt-ascii.o ../mediatek/source/kernel/drivers/lttng/ltt-serialize.o ../mediatek/source/kernel/drivers/lttng/ltt-type-serializer.o

@@ -1,0 +1,86 @@
+# Copyright Statement:
+#
+# This software/firmware and related documentation ("MediaTek Software") are
+# protected under relevant copyright laws. The information contained herein
+# is confidential and proprietary to MediaTek Inc. and/or its licensors.
+# Without the prior written permission of MediaTek inc. and/or its licensors,
+# any reproduction, modification, use or disclosure of MediaTek Software,
+# and information contained herein, in whole or in part, shall be strictly prohibited.
+#
+# MediaTek Inc. (C) 2010. All rights reserved.
+#
+# BY OPENING THIS FILE, RECEIVER HEREBY UNEQUIVOCALLY ACKNOWLEDGES AND AGREES
+# THAT THE SOFTWARE/FIRMWARE AND ITS DOCUMENTATIONS ("MEDIATEK SOFTWARE")
+# RECEIVED FROM MEDIATEK AND/OR ITS REPRESENTATIVES ARE PROVIDED TO RECEIVER ON
+# AN "AS-IS" BASIS ONLY. MEDIATEK EXPRESSLY DISCLAIMS ANY AND ALL WARRANTIES,
+# EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE IMPLIED WARRANTIES OF
+# MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE OR NONINFRINGEMENT.
+# NEITHER DOES MEDIATEK PROVIDE ANY WARRANTY WHATSOEVER WITH RESPECT TO THE
+# SOFTWARE OF ANY THIRD PARTY WHICH MAY BE USED BY, INCORPORATED IN, OR
+# SUPPLIED WITH THE MEDIATEK SOFTWARE, AND RECEIVER AGREES TO LOOK ONLY TO SUCH
+# THIRD PARTY FOR ANY WARRANTY CLAIM RELATING THERETO. RECEIVER EXPRESSLY ACKNOWLEDGES
+# THAT IT IS RECEIVER'S SOLE RESPONSIBILITY TO OBTAIN FROM ANY THIRD PARTY ALL PROPER LICENSES
+# CONTAINED IN MEDIATEK SOFTWARE. MEDIATEK SHALL ALSO NOT BE RESPONSIBLE FOR ANY MEDIATEK
+# SOFTWARE RELEASES MADE TO RECEIVER'S SPECIFICATION OR TO CONFORM TO A PARTICULAR
+# STANDARD OR OPEN FORUM. RECEIVER'S SOLE AND EXCLUSIVE REMEDY AND MEDIATEK'S ENTIRE AND
+# CUMULATIVE LIABILITY WITH RESPECT TO THE MEDIATEK SOFTWARE RELEASED HEREUNDER WILL BE,
+# AT MEDIATEK'S OPTION, TO REVISE OR REPLACE THE MEDIATEK SOFTWARE AT ISSUE,
+# OR REFUND ANY SOFTWARE LICENSE FEES OR SERVICE CHARGE PAID BY RECEIVER TO
+# MEDIATEK FOR SUCH MEDIATEK SOFTWARE AT ISSUE.
+
+
+# IBM Integrity Measurement Architecture
+#
+config IMA
+	bool "Integrity Measurement Architecture(IMA)"
+	depends on SECURITY
+	select SECURITYFS
+	select CRYPTO
+	select CRYPTO_HMAC
+	select CRYPTO_MD5
+	select CRYPTO_SHA1
+	select TCG_TPM if !S390
+	select TCG_TIS if TCG_TPM
+	help
+	  The Trusted Computing Group(TCG) runtime Integrity
+	  Measurement Architecture(IMA) maintains a list of hash
+	  values of executables and other sensitive system files,
+	  as they are read or executed. If an attacker manages
+	  to change the contents of an important system file
+	  being measured, we can tell.
+
+	  If your system has a TPM chip, then IMA also maintains
+	  an aggregate integrity value over this list inside the
+	  TPM hardware, so that the TPM can prove to a third party
+	  whether or not critical system files have been modified.
+	  Read <http://www.usenix.org/events/sec04/tech/sailer.html>
+	  to learn more about IMA.
+	  If unsure, say N.
+
+config IMA_MEASURE_PCR_IDX
+	int
+	depends on IMA
+	range 8 14
+	default 10
+	help
+	  IMA_MEASURE_PCR_IDX determines the TPM PCR register index
+	  that IMA uses to maintain the integrity aggregate of the
+	  measurement list.  If unsure, use the default 10.
+
+config IMA_AUDIT
+	bool
+	depends on IMA
+	default y
+	help
+	  This option adds a kernel parameter 'ima_audit', which
+	  allows informational auditing messages to be enabled
+	  at boot.  If this option is selected, informational integrity
+	  auditing messages can be enabled with 'ima_audit=1' on
+	  the kernel command line.
+
+config IMA_LSM_RULES
+	bool
+	depends on IMA && AUDIT && (SECURITY_SELINUX || SECURITY_SMACK)
+	default y
+	help
+	  Disabling this option will disregard LSM based policy rules.

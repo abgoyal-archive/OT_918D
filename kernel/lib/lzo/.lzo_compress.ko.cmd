@@ -1,0 +1,1 @@
+cmd_lib/lzo/lzo_compress.ko := arm-eabi-ld.bfd -EL -r  -T /local/gin2_build/v343-7-band18/kernel/scripts/module-common.lds --build-id -o lib/lzo/lzo_compress.ko lib/lzo/lzo_compress.o lib/lzo/lzo_compress.mod.o

@@ -1,0 +1,217 @@
+/* Copyright Statement:
+ *
+ * This software/firmware and related documentation ("MediaTek Software") are
+ * protected under relevant copyright laws. The information contained herein
+ * is confidential and proprietary to MediaTek Inc. and/or its licensors.
+ * Without the prior written permission of MediaTek inc. and/or its licensors,
+ * any reproduction, modification, use or disclosure of MediaTek Software,
+ * and information contained herein, in whole or in part, shall be strictly prohibited.
+ *
+ * MediaTek Inc. (C) 2010. All rights reserved.
+ *
+ * BY OPENING THIS FILE, RECEIVER HEREBY UNEQUIVOCALLY ACKNOWLEDGES AND AGREES
+ * THAT THE SOFTWARE/FIRMWARE AND ITS DOCUMENTATIONS ("MEDIATEK SOFTWARE")
+ * RECEIVED FROM MEDIATEK AND/OR ITS REPRESENTATIVES ARE PROVIDED TO RECEIVER ON
+ * AN "AS-IS" BASIS ONLY. MEDIATEK EXPRESSLY DISCLAIMS ANY AND ALL WARRANTIES,
+ * EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE IMPLIED WARRANTIES OF
+ * MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE OR NONINFRINGEMENT.
+ * NEITHER DOES MEDIATEK PROVIDE ANY WARRANTY WHATSOEVER WITH RESPECT TO THE
+ * SOFTWARE OF ANY THIRD PARTY WHICH MAY BE USED BY, INCORPORATED IN, OR
+ * SUPPLIED WITH THE MEDIATEK SOFTWARE, AND RECEIVER AGREES TO LOOK ONLY TO SUCH
+ * THIRD PARTY FOR ANY WARRANTY CLAIM RELATING THERETO. RECEIVER EXPRESSLY ACKNOWLEDGES
+ * THAT IT IS RECEIVER'S SOLE RESPONSIBILITY TO OBTAIN FROM ANY THIRD PARTY ALL PROPER LICENSES
+ * CONTAINED IN MEDIATEK SOFTWARE. MEDIATEK SHALL ALSO NOT BE RESPONSIBLE FOR ANY MEDIATEK
+ * SOFTWARE RELEASES MADE TO RECEIVER'S SPECIFICATION OR TO CONFORM TO A PARTICULAR
+ * STANDARD OR OPEN FORUM. RECEIVER'S SOLE AND EXCLUSIVE REMEDY AND MEDIATEK'S ENTIRE AND
+ * CUMULATIVE LIABILITY WITH RESPECT TO THE MEDIATEK SOFTWARE RELEASED HEREUNDER WILL BE,
+ * AT MEDIATEK'S OPTION, TO REVISE OR REPLACE THE MEDIATEK SOFTWARE AT ISSUE,
+ * OR REFUND ANY SOFTWARE LICENSE FEES OR SERVICE CHARGE PAID BY RECEIVER TO
+ * MEDIATEK FOR SUCH MEDIATEK SOFTWARE AT ISSUE.
+ */
+
+/*
+ * Copyright (C) 2010 Google Inc. All rights reserved.
+ *
+ * Redistribution and use in source and binary forms, with or without
+ * modification, are permitted provided that the following conditions are
+ * met:
+ *
+ *     * Redistributions of source code must retain the above copyright
+ * notice, this list of conditions and the following disclaimer.
+ *     * Redistributions in binary form must reproduce the above
+ * copyright notice, this list of conditions and the following disclaimer
+ * in the documentation and/or other materials provided with the
+ * distribution.
+ *     * Neither the name of Google Inc. nor the names of its
+ * contributors may be used to endorse or promote products derived from
+ * this software without specific prior written permission.
+ *
+ * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
+ * "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
+ * LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
+ * A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT
+ * OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
+ * SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
+ * LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
+ * DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY
+ * THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
+ * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
+ * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+ */
+
+#include "config.h"
+#include "SuggestionsPopupMenuClient.h"
+
+#include "CSSStyleSelector.h"
+#include "CSSValueKeywords.h"
+#include "Chrome.h"
+#include "FrameView.h"
+#include "HTMLInputElement.h"
+#include "RenderTheme.h"
+#include "WebViewImpl.h"
+
+using namespace WebCore;
+
+namespace WebKit {
+
+SuggestionsPopupMenuClient::SuggestionsPopupMenuClient()
+    : m_textField(0)
+    , m_selectedIndex(0)
+{
+}
+
+SuggestionsPopupMenuClient::~SuggestionsPopupMenuClient()
+{
+}
+
+// FIXME: Implement this per-derived class?
+void SuggestionsPopupMenuClient::valueChanged(unsigned listIndex, bool fireEvents)
+{
+    m_textField->setValue(getSuggestion(listIndex));
+
+    WebViewImpl* webView = getWebView();
+    if (!webView)
+        return;
+
+    EditorClientImpl* editor =
+        static_cast<EditorClientImpl*>(webView->page()->editorClient());
+    ASSERT(editor);
+    editor->onAutofillSuggestionAccepted(
+        static_cast<HTMLInputElement*>(m_textField.get()));
+}
+
+String SuggestionsPopupMenuClient::itemText(unsigned listIndex) const
+{
+    return getSuggestion(listIndex);
+}
+
+PopupMenuStyle SuggestionsPopupMenuClient::itemStyle(unsigned listIndex) const
+{
+    return *m_style;
+}
+
+PopupMenuStyle SuggestionsPopupMenuClient::menuStyle() const
+{
+    return *m_style;
+}
+
+int SuggestionsPopupMenuClient::clientPaddingLeft() const
+{
+    // Bug http://crbug.com/7708 seems to indicate the style can be 0.
+    RenderStyle* style = textFieldStyle();
+    if (!style)
+       return 0;
+
+    return RenderTheme::defaultTheme()->popupInternalPaddingLeft(style);
+}
+
+int SuggestionsPopupMenuClient::clientPaddingRight() const
+{
+    // Bug http://crbug.com/7708 seems to indicate the style can be 0.
+    RenderStyle* style = textFieldStyle();
+    if (!style)
+        return 0;
+
+    return RenderTheme::defaultTheme()->popupInternalPaddingRight(style);
+}
+
+void SuggestionsPopupMenuClient::popupDidHide()
+{
+    WebViewImpl* webView = getWebView();
+    if (webView)
+        webView->suggestionsPopupDidHide();
+}
+
+void SuggestionsPopupMenuClient::setTextFromItem(unsigned listIndex)
+{
+    m_textField->setValue(getSuggestion(listIndex));
+}
+
+FontSelector* SuggestionsPopupMenuClient::fontSelector() const
+{
+    return m_textField->document()->styleSelector()->fontSelector();
+}
+
+HostWindow* SuggestionsPopupMenuClient::hostWindow() const
+{
+    return m_textField->document()->view()->hostWindow();
+}
+
+PassRefPtr<Scrollbar> SuggestionsPopupMenuClient::createScrollbar(
+    ScrollbarClient* client,
+    ScrollbarOrientation orientation,
+    ScrollbarControlSize size)
+{
+    return Scrollbar::createNativeScrollbar(client, orientation, size);
+}
+
+RenderStyle* SuggestionsPopupMenuClient::textFieldStyle() const
+{
+    RenderStyle* style = m_textField->computedStyle();
+    if (!style) {
+        // It seems we can only have a 0 style in a TextField if the
+        // node is detached, in which case we the popup shoud not be
+        // showing.  Please report this in http://crbug.com/7708 and
+        // include the page you were visiting.
+        ASSERT_NOT_REACHED();
+    }
+    return style;
+}
+
+void SuggestionsPopupMenuClient::initialize(HTMLInputElement* textField,
+                                            int defaultSuggestionIndex)
+{
+    m_textField = textField;
+    m_selectedIndex = defaultSuggestionIndex;
+
+    FontDescription fontDescription;
+    RenderTheme::defaultTheme()->systemFont(CSSValueWebkitControl,
+                                            fontDescription);
+
+    // Use a smaller font size to match IE/Firefox.
+    // FIXME: http://crbug.com/7376 use the system size instead of a
+    //        fixed font size value.
+    fontDescription.setComputedSize(12.0);
+    Font font(fontDescription, 0, 0);
+    font.update(textField->document()->styleSelector()->fontSelector());
+    // The direction of text in popup menu is set the same as the direction of
+    // the input element: textField.
+    m_style.set(new PopupMenuStyle(Color::black, Color::white, font, true,
+                                   Length(WebCore::Fixed),
+                                   textField->renderer()->style()->direction()));
+}
+
+WebViewImpl* SuggestionsPopupMenuClient::getWebView() const
+{
+    Frame* frame = m_textField->document()->frame();
+    if (!frame)
+        return 0;
+
+    Page* page = frame->page();
+    if (!page)
+        return 0;
+
+    return static_cast<ChromeClientImpl*>(page->chrome()->client())->webView();
+}
+
+} // namespace WebKit
